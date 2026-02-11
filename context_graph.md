@@ -3,14 +3,18 @@
 ## Goals
 - [ ] Establish initial context graph structure
 - [ ] Optimize system initialization
+- [ ] Implement Vector Search Context Graph (PostgreSQL + Embeddings)
 
 ## Projects
 - **System Bootstrap**: Initial configuration and personality alignment.
+- **Context Graph Upgrade**: Migration to PostgreSQL with pgvector.
 
 ## Tasks
 - [x] Define Identity (Jarvis)
 - [x] Define Soul (Strategic Architect)
 - [ ] Define User Context (Pending input)
+- [ ] Verify PostgreSQL + pgvector availability
+- [ ] Select Embedding Model
 
 ## Constraints
 - Token efficiency (High priority)
