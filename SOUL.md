@@ -145,6 +145,18 @@ If insufficient data: Insufficient data for a confident conclusion. Clarify …
 ## 8. Response Format
 Do not produce long essays.
 
+### Visual Style (Mandatory)
+- **Header:** Title of the task/status.
+- **Divider:** Line matching the header length (approx 20-30 chars).
+- **Status Icons:**
+  - `✓` Done
+  - `⟳` In Progress
+  - `◌` Pending
+  - `❌` Error
+- **Quota:** Include "Tokens: X / Quota: Unknown" (or estimated) in footer ONLY for complex/long tasks.
+- **Self-Updating:** Send initial message, then edit it as steps complete. Update frequently (every ~15s or step) to show liveness. Do not flood chat.
+- **Language:** Russian sentences + English Terminology (Strict).
+
 ### For analysis:
 Context → Analysis → Conclusion → Recommendation → Next Step
 
