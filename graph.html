@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>JARVIS Context Graph</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+    #graph { width: 100vw; height: 100vh; }
+    .tooltip { position: absolute; background: rgba(20,20,30,0.95); border: 1px solid #444; 
+               border-radius: 8px; padding: 10px 14px; font-size: 13px; pointer-events: none;
+               max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .tooltip .name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+    .tooltip .type { color: #888; font-size: 11px; text-transform: uppercase; }
+    #legend { position: fixed; top: 16px; right: 16px; background: rgba(20,20,30,0.9);
+              border: 1px solid #333; border-radius: 10px; padding: 14px 18px; }
+    #legend h3 { margin-bottom: 8px; font-size: 14px; color: #aaa; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+    #stats { position: fixed; bottom: 16px; left: 16px; background: rgba(20,20,30,0.9);
+             border: 1px solid #333; border-radius: 10px; padding: 10px 14px; font-size: 12px; color: #888; }
+    #title { position: fixed; top: 16px; left: 16px; font-size: 22px; font-weight: bold;
+             background: linear-gradient(90deg, #4fc3f7, #7c4dff); -webkit-background-clip: text;
+             -webkit-text-fill-color: transparent; }
+  </style>
+</head>
+<body>
+  <div id="title">💠 JARVIS Context Graph</div>
+  <div id="graph"></div>
+  <div id="legend">
+    <h3>Entity Types</h3>
+    <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div>Actor</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff7043"></div>Promise</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#66bb6a"></div>Decision</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ffd54f"></div>Metric</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ab47bc"></div>Plan</div>
+  </div>
+  <div id="stats"></div>
+  <div class="tooltip" id="tooltip" style="display:none"></div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const colors = { Actor:'#4fc3f7', Promise:'#ff7043', Decision:'#66bb6a', Metric:'#ffd54f', Plan:'#ab47bc' };
+    const sizes = { Actor: 20, Promise: 12, Decision: 14, Metric: 10, Plan: 11 };
+
+    fetch('graph_data.json').then(r => r.json()).then(data => {
+      const W = window.innerWidth, H = window.innerHeight;
+      document.getElementById('stats').innerHTML = 
+        `Nodes: ${data.nodes.length} | Links: ${data.links.length} | Updated: ${new Date().toLocaleString()}`;
+
+      const svg = d3.select('#graph').append('svg').attr('width', W).attr('height', H);
+      const g = svg.append('g');
+      svg.call(d3.zoom().scaleExtent([0.2, 5]).on('zoom', e => g.attr('transform', e.transform)));
+
+      const sim = d3.forceSimulation(data.nodes)
+        .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+        .force('charge', d3.forceManyBody().strength(-300))
+        .force('center', d3.forceCenter(W/2, H/2))
+        .force('collision', d3.forceCollide().radius(d => (sizes[d.group]||12) + 5));
+
+      const link = g.append('g').selectAll('line').data(data.links).join('line')
+        .attr('stroke', '#333').attr('stroke-width', 1.5).attr('stroke-opacity', 0.6);
+
+      const linkLabels = g.append('g').selectAll('text').data(data.links).join('text')
+        .text(d => d.relation).attr('font-size', 9).attr('fill', '#555').attr('text-anchor', 'middle');
+
+      const node = g.append('g').selectAll('circle').data(data.nodes).join('circle')
+        .attr('r', d => sizes[d.group] || 12)
+        .attr('fill', d => {
+          if (d.name === 'Arisha') return '#ff69b4';
+          if (d.name === 'Valekk_17') return '#4fc3f7';
+          return colors[d.group] || '#888';
+        })
+        .attr('stroke', d => d.group === 'Actor' ? '#fff' : 'none')
+        .attr('stroke-width', d => d.group === 'Actor' ? 2 : 0)
+        .style('cursor', 'pointer')
+        .call(d3.drag().on('start', ds).on('drag', dd).on('end', de));
+
+      const labels = g.append('g').selectAll('text').data(data.nodes).join('text')
+        .text(d => d.name.length > 25 ? d.name.slice(0,22)+'...' : d.name)
+        .attr('font-size', d => d.group === 'Actor' ? 13 : 10)
+        .attr('fill', d => d.group === 'Actor' ? '#fff' : '#bbb')
+        .attr('text-anchor', 'middle').attr('dy', d => -(sizes[d.group]||12) - 6);
+
+      const tooltip = document.getElementById('tooltip');
+      node.on('mouseover', (e, d) => {
+        tooltip.style.display = 'block';
+        tooltip.innerHTML = `<div class="name">${d.name}</div><div class="type">${d.group}</div>` +
+          (d.role ? `<div>Role: ${d.role}</div>` : '') +
+          (d.context ? `<div>${d.context}</div>` : '') +
+          (d.status ? `<div>Status: ${d.status}</div>` : '') +
+          (d.confidence ? `<div>Confidence: ${d.confidence}</div>` : '');
+      }).on('mousemove', e => {
+        tooltip.style.left = (e.pageX + 15) + 'px';
+        tooltip.style.top = (e.pageY - 10) + 'px';
+      }).on('mouseout', () => tooltip.style.display = 'none');
+
+      sim.on('tick', () => {
+        link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+        linkLabels.attr('x',d=>(d.source.x+d.target.x)/2).attr('y',d=>(d.source.y+d.target.y)/2);
+        node.attr('cx',d=>d.x).attr('cy',d=>d.y);
+        labels.attr('x',d=>d.x).attr('y',d=>d.y);
+      });
+
+      function ds(e,d){if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;}
+      function dd(e,d){d.fx=e.x;d.fy=e.y;}
+      function de(e,d){if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}
+    });
+  </script>
+</body>
+</html>

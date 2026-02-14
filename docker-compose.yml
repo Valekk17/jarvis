@@ -14,22 +14,5 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
-  neo4j:
-    image: neo4j:5.16.0-community
-    container_name: jarvis_neo4j
-    restart: unless-stopped
-    ports:
-      - "7474:7474" # HTTP
-      - "7687:7687" # Bolt
-    environment:
-      NEO4J_AUTH: neo4j/jarvis_neo4j_password
-      NEO4J_PLUGINS: '["apoc"]' # Enable APOC for advanced graph operations
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-
 volumes:
   pg_data:
-  neo4j_data:
-  neo4j_logs:

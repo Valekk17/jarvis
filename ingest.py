@@ -4,35 +4,56 @@ import psycopg2.extras
 import google.generativeai as genai
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import uuid
+import time
+from key_manager import KeyManager
 
 # Configuration
 PG_DSN = "postgresql://jarvis_user:jarvis_password@localhost:5432/jarvis_db"
-API_KEY = os.getenv("GOOGLE_API_KEY")
 MEMORY_FILE = "/root/.openclaw/workspace/MEMORY.md"
 
-if not API_KEY:
-    print("Error: GOOGLE_API_KEY not found in environment.")
-    exit(1)
-
-genai.configure(api_key=API_KEY)
-
-# Use 'models/embedding-001' or 'models/text-embedding-004'
+# Use 'models/gemini-embedding-001' or 'models/text-embedding-004'
 EMBEDDING_MODEL = "models/gemini-embedding-001" 
 
-def get_embedding(text):
-    text = text.replace("\n", " ")
-    # output_dimensionality=768 is default for 004, but let's be explicit if needed.
-    # embedding-001 is 768 too.
-    result = genai.embed_content(
-        model=EMBEDDING_MODEL,
-        content=text,
-        task_type="retrieval_document",
-        title="Embedding of chunk",
-        output_dimensionality=768
-    )
-    return result['embedding']
+def get_embedding(text, manager):
+    # Retry logic
+    max_retries = len(manager.keys) * 2
+    for attempt in range(max_retries):
+        key = manager.get_key()
+        genai.configure(api_key=key)
+        
+        try:
+            text = text.replace("\n", " ")
+            # output_dimensionality only for 004
+            if "004" in EMBEDDING_MODEL:
+                result = genai.embed_content(
+                    model=EMBEDDING_MODEL,
+                    content=text,
+                    task_type="retrieval_document",
+                    title="Embedding of chunk",
+                    output_dimensionality=768
+                )
+            else:
+                result = genai.embed_content(
+                    model=EMBEDDING_MODEL,
+                    content=text,
+                    task_type="retrieval_document",
+                    title="Embedding of chunk"
+                )
+            return result['embedding']
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
+                print(f"Error (429/Quota) with key index {manager.index}: {e}. Rotating...")
+                manager.rotate()
+                continue
+            else:
+                print(f"Non-Quota Error: {e}")
+                if attempt > 1: return []
+                continue
+    return []
 
 def ingest_memory():
+    manager = KeyManager()
+    
     # 1. Connect to Postgres
     try:
         conn = psycopg2.connect(PG_DSN)
@@ -57,23 +78,26 @@ def ingest_memory():
     # 4. Process Chunks
     for i, chunk in enumerate(chunks):
         print(f"Processing chunk {i+1}/{len(chunks)}...")
-        try:
-            embedding = get_embedding(chunk)
+        
+        embedding = get_embedding(chunk, manager)
+        
+        if not embedding:
+            print(f"Skipping chunk {i} due to embedding failure.")
+            continue
             
-            # Check dimension
-            if len(embedding) != 768:
-                print(f"Warning: Expected 768 dim, got {len(embedding)}")
-                continue
+        # Check dimension (should be 768 for gemini-embedding-001)
+        if len(embedding) != 768:
+            print(f"Warning: Expected 768 dim, got {len(embedding)}")
+            continue
 
-            # Insert into DB
-            sql = """
-                INSERT INTO memory_chunks (id, content, embedding, metadata)
-                VALUES (%s, %s, %s, %s)
-            """
-            metadata = {"source": "MEMORY.md", "chunk_index": i}
-            cursor.execute(sql, (str(uuid.uuid4()), chunk, embedding, psycopg2.extras.Json(metadata)))
-        except Exception as e:
-            print(f"Error embedding chunk {i}: {e}")
+        # Insert into DB
+        sql = """
+            INSERT INTO memory_chunks (id, content, embedding, metadata)
+            VALUES (%s, %s, %s, %s)
+        """
+        timestamp = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        metadata = {"source": "MEMORY.md", "chunk_index": i, "created_at": timestamp}
+        cursor.execute(sql, (str(uuid.uuid4()), chunk, embedding, psycopg2.extras.Json(metadata)))
     
     conn.commit()
     cursor.close()

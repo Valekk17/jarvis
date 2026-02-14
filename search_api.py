@@ -1,65 +1,72 @@
 import os
 import psycopg2
 import google.generativeai as genai
-from neo4j import GraphDatabase
-import json
+from key_manager import KeyManager
+from embedding_util import get_embedding
 
 # Configuration
 PG_DSN = "postgresql://jarvis_user:jarvis_password@localhost:5432/jarvis_db"
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_AUTH = ("neo4j", "jarvis_neo4j_password")
-API_KEY = os.getenv("GOOGLE_API_KEY")
-
-genai.configure(api_key=API_KEY)
-
-def get_embedding(text):
-    result = genai.embed_content(
-        model="models/gemini-embedding-001",
-        content=text,
-        task_type="retrieval_query",
-        output_dimensionality=768
-    )
-    return result['embedding']
 
 def search(query):
+    manager = KeyManager()
     print(f"Searching for: '{query}'")
     
     # 1. Generate Embedding
-    embedding = get_embedding(query)
+    embedding = get_embedding(query, manager)
+    if not embedding:
+        print("Embedding failed.")
+        return
     
-    # 2. Vector Search (Postgres)
+    # 2. Vector Search (Postgres) with Temporal Decay
     conn = psycopg2.connect(PG_DSN)
     cursor = conn.cursor()
+    
+    # Formula: Similarity * (1 / (1 + 0.1 * Days_Old))
+    # Extract days from metadata->>'created_at'
+    # Assume metadata->>'created_at' format is ISO string
+    
     sql = """
-        SELECT content, metadata, 1 - (embedding <=> %s::vector) as similarity
+        SELECT content, metadata, 
+               (1 - (embedding <=> %s::vector)) as similarity,
+               EXTRACT(DAY FROM (NOW() - (metadata->>'created_at')::timestamp)) as age_days,
+               (1 - (embedding <=> %s::vector)) * (1.0 / (1.0 + 0.1 * GREATEST(0, EXTRACT(DAY FROM (NOW() - (metadata->>'created_at')::timestamp))))) as score
         FROM memory_chunks
-        ORDER BY embedding <=> %s::vector
+        ORDER BY score DESC
         LIMIT 3
     """
     cursor.execute(sql, (embedding, embedding))
     chunks = cursor.fetchall()
-    conn.close()
     
-    print("\n--- Semantic Results ---")
+    print("\n--- Semantic Results (Decayed) ---")
     for row in chunks:
-        print(f"[Score: {row[2]:.4f}] {row[0][:100]}...")
+        content = row[0]
+        meta = row[1]
+        sim = row[2]
+        age = row[3]
+        score = row[4]
+        print(f"[Score: {score:.4f} | Sim: {sim:.4f} | Age: {age}d] {content[:100]}...")
 
-    # 3. Graph Search (Neo4j)
-    # Simple keyword match or vector match on nodes?
-    # Let's do simple keyword match on nodes for now.
-    driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
-    with driver.session() as session:
-        cypher = """
-        MATCH (n)
-        WHERE toLower(n.name) CONTAINS toLower($search_text) OR toLower(n.description) CONTAINS toLower($search_text)
-        RETURN n.name, n.description, labels(n)
+    # 3. Graph Search (Graph Nodes) - Also Boost by Freshness?
+    # graph_nodes has created_at column.
+    
+    print("\n--- Graph Results ---")
+    # Search graph nodes with similar logic? Or just simple name match for now.
+    # We moved graph to Postgres.
+    
+    # Text Search on Nodes
+    cursor.execute("""
+        SELECT label, name, description, created_at
+        FROM graph_nodes
+        WHERE name ILIKE %s OR description ILIKE %s
+        ORDER BY created_at DESC
         LIMIT 5
-        """
-        result = session.run(cypher, search_text=query)
-        print("\n--- Graph Results ---")
-        for record in result:
-            print(f"[{record['labels(n)'][0]}] {record['n.name']}: {record['n.description']}")
-    driver.close()
+    """, (f"%{query}%", f"%{query}%"))
+    
+    nodes = cursor.fetchall()
+    for n in nodes:
+        print(f"[{n[0]}] {n[1]}: {n[2]} (Created: {n[3]})")
+
+    conn.close()
 
 if __name__ == "__main__":
     import sys

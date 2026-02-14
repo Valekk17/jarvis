@@ -1,79 +1,96 @@
 import os
 import psycopg2
 import google.generativeai as genai
-from neo4j import GraphDatabase
 import json
+import uuid
 import time
+from key_manager import KeyManager
+from embedding_util import get_embedding
 
-# Configuration
 PG_DSN = "postgresql://jarvis_user:jarvis_password@localhost:5432/jarvis_db"
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_AUTH = ("neo4j", "jarvis_neo4j_password")
-API_KEY = os.getenv("GOOGLE_API_KEY")
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('models/gemini-2.5-flash')
+def extract_context_graph(text, manager):
+    # Retry logic
+    models = ['models/gemini-2.5-flash', 'models/gemini-3-flash-preview', 'models/gemini-1.5-flash']
+    
+    for model_name in models:
+        max_retries = len(manager.keys)
+        # Try each key for current model
+        for _ in range(max_retries):
+            key = manager.get_key()
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel(model_name)
+            
+            # ... prompt definition ... (move prompt inside loop or define once)
+            prompt = f"""
+            Analyze the following text and extract knowledge graph entities.
+            
+            **Ontology (Strict):**
+            - **Entities**: Actor, Topic, Fact, Promise, Decision.
+            - **Naming**: Node names MUST be atomic (1-3 words). E.g., "Neo4j", NOT "Adopted Neo4j".
+            - **Relations**: 
+              - `MENTIONED`: Actor mentioned Topic/Actor.
+              - `PROMISED`: Actor promised Fact/Action.
+              - `DECIDED`: Actor made Decision.
+              - `HAS_TOPIC`: Message/Context relates to Topic.
+              - `RELATED_TO`: Generic connection (avoid if possible).
 
-def extract_entities(text):
-    prompt = f"""
-    Extract knowledge graph entities and relationships from the following text.
-    Return JSON format:
-    {{
-      "nodes": [
-        {{"id": "unique_id", "label": "Person|Project|Concept|Event", "name": "Name", "description": "Short desc"}}
-      ],
-      "edges": [
-        {{"source": "id_source", "target": "id_target", "relation": "RELATION_TYPE", "weight": 1.0}}
-      ]
-    }}
-    Text: {text}
+            Return JSON:
+            {{
+              "actors": [ {{"name": "Name", "description": "Role"}} ],
+              "topics": [ {{"name": "Topic", "description": "Context"}} ],
+              "facts": [ {{"subject": "Name", "predicate": "RELATION_FROM_LIST", "object": "Name"}} ],
+              "promises": [ {{"description": "What", "from": "Name", "to": "Name"}} ]
+            }}
+            
+            Text:
+            {text}
+            """
+            
+            try:
+                response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+                return json.loads(response.text)
+            except Exception as e:
+                if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
+                    print(f"Quota error on {model_name} (Key {manager.index}). Rotating...")
+                    manager.rotate()
+                    continue
+                elif "404" in str(e):
+                    print(f"Model {model_name} not found. Switching model...")
+                    break # Break key loop to try next model
+                else:
+                    print(f"Error: {e}")
+                    break # Non-quota error, maybe content issue?
+    return {}
+
+def get_or_create_node(cursor, label, name, desc=None, manager=None):
+    if name.lower() in ['me', 'i', 'my', 'я']: name = 'Valekk_17'
+    
+    embedding = get_embedding(name, manager) if manager else None
+    
+    # Check deduplication
+    if embedding:
+        # find_similar... (Simplified for brevity, use direct insert/conflict)
+        pass
+
+    sql = """
+        INSERT INTO graph_nodes (label, name, description, embedding)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (label, name) 
+        DO UPDATE SET description = COALESCE(graph_nodes.description, EXCLUDED.description)
+        RETURNING id
     """
-    response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-    try:
-        return json.loads(response.text)
-    except:
-        return {"nodes": [], "edges": []}
+    cursor.execute(sql, (label, name, desc, embedding))
+    return cursor.fetchone()[0]
+
+def create_edge(cursor, source_id, target_id, relation):
+    sql = """
+        INSERT INTO graph_edges (source_id, target_id, relation)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (source_id, target_id, relation) DO NOTHING
+    """
+    cursor.execute(sql, (source_id, target_id, relation))
 
 def run():
-    # 1. Connect PG
-    conn = psycopg2.connect(PG_DSN)
-    cursor = conn.cursor()
-    
-    # 2. Connect Neo4j
-    driver = GraphDatabase.driver(NEO4J_URI, auth=NEO4J_AUTH)
-    
-    # 3. Read Chunks
-    cursor.execute("SELECT id, content FROM memory_chunks")
-    rows = cursor.fetchall()
-    print(f"Processing {len(rows)} chunks...")
-
-    for row in rows:
-        chunk_id, content = row
-        print(f"Extracting from chunk {chunk_id}...")
-        
-        data = extract_entities(content)
-        
-        with driver.session() as session:
-            # Create Nodes
-            for node in data.get("nodes", []):
-                cypher = f"""
-                MERGE (n:{node['label']} {{id: $id}})
-                SET n.name = $name, n.description = $desc
-                """
-                session.run(cypher, id=node['id'], name=node['name'], desc=node.get('description', ''))
-            
-            # Create Edges
-            for edge in data.get("edges", []):
-                cypher = f"""
-                MATCH (s {{id: $source}}), (t {{id: $target}})
-                MERGE (s)-[r:{edge['relation']}]->(t)
-                SET r.weight = $weight
-                """
-                session.run(cypher, source=edge['source'], target=edge['target'], weight=edge.get('weight', 1.0))
-
-    driver.close()
-    conn.close()
-    print("Graph Extraction Complete.")
-
-if __name__ == "__main__":
-    run()
+    # Only for standalone run
+    pass
