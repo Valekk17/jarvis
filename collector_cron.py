@@ -116,18 +116,33 @@ TEXT:
             return {}
     return {}
 
+ACTOR_MAP = {
+    "valekk": "actor-owner", "valekk_17": "actor-owner", "я": "actor-owner", "me": "actor-owner",
+    "arisha": "actor-arisha", "ариша": "actor-arisha", "жена": "actor-arisha", "wife": "actor-arisha",
+    "мой мир❤️": "actor-arisha", "мой мир": "actor-arisha",
+    "leha": "actor-leha-kosenko", "леха": "actor-leha-kosenko", "лёха": "actor-leha-kosenko",
+    "alexey kosenko": "actor-leha-kosenko", "косенко": "actor-leha-kosenko",
+    "мама": "actor-evgeniya", "evgeniya": "actor-evgeniya",
+    "андрей": "actor-andrey", "брат": "actor-andrey",
+}
+
+def resolve_actor(name):
+    return ACTOR_MAP.get(name.lower().strip(), name)
+
 def save_entities(data, chat_name):
-    """Save to PostgreSQL + md files."""
+    """Save to PostgreSQL + md files with actor resolution."""
     conn = psycopg2.connect(PG_DSN)
     cur = conn.cursor()
     saved = 0
 
     for p in data.get("promises", []):
         uid = f"promise-{uuid.uuid4().hex[:8]}"
+        from_a = resolve_actor(p.get('from',''))
+        to_a = resolve_actor(p.get('to',''))
         try:
             cur.execute("""INSERT INTO promises (id, from_actor, to_actor, content, deadline, status, source_quote, source_date, confidence)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-                (uid, p.get('from',''), p.get('to',''), p.get('content',''),
+                (uid, from_a, to_a, p.get('content',''),
                  p.get('deadline'), p.get('status','pending'), p.get('source_quote',''), TODAY, p.get('confidence',0.8)))
             saved += 1
         except: conn.rollback()

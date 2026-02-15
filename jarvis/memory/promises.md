@@ -12,7 +12,37 @@
 - confidence: 0.0-1.0
 -->
 
-## promise-arisha-001
+## promise-42b1f8dc
+- from: actor-arisha
+- to: actor-owner
+- content: показывать и рассказывать детям как сильно тебя люблю и как ты меня любишь
+- deadline: null
+- status: pending
+- source_quote: "Вообще всегда буду показывать и рассказывать детям как сильно тебя люблю и как ты меня любишь"
+- source_date: 2026-02-14
+- confidence: 0.9
+
+## promise-6e001623
+- from: actor-owner
+- to: actor-arisha
+- content: скачать и скинуть фотки
+- deadline: null
+- status: pending
+- source_quote: "Скачай и скинь"
+- source_date: 2026-02-14
+- confidence: 0.9
+
+## promise-a9a15ce4
+- from: actor-owner
+- to: actor-arisha
+- content: отправить напоминание Комбату
+- deadline: null
+- status: pending
+- source_quote: "Комбату отправь напоминание"
+- source_date: 2026-02-14
+- confidence: 0.9
+
+## promise-deo
 - from: actor-owner
 - to: actor-arisha
 - content: order deodorants
@@ -22,7 +52,7 @@
 - source_date: 2026-02-14
 - confidence: 0.9
 
-## promise-arisha-002
+## promise-ins
 - from: actor-arisha
 - to: actor-owner
 - content: insurance will be free
@@ -32,82 +62,12 @@
 - source_date: 2026-02-14
 - confidence: 0.9
 
-## promise-75a4ade8
-- from: Leha Kosenko
-- to: Valekk
-- content: скинуть отчет
-- deadline: 2026-02-14
+## promise-leha
+- from: actor-leha-kosenko
+- to: actor-owner
+- content: send report
+- deadline: null
 - status: pending
-- source_quote: "Вчера Леха Косенко обещал скинуть отчет до пятницы."
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-fab2dcd1
-- from: Valekk
-- to: Мой Мир❤️
-- content: прийти
-- deadline: None
-- status: pending
-- source_quote: "Приду❤️"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-984b804b
-- from: Valekk
-- to: Мой Мир❤️
-- content: не прийти на ужин
-- deadline: None
-- status: pending
-- source_quote: "Не приду на ужин"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-0384718f
-- from: Valekk
-- to: Мой Мир❤️
-- content: заказать дезодоранты
-- deadline: None
-- status: pending
-- source_quote: "А еще закажи дезики, пожалуйста"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-298500eb
-- from: Valekk
-- to: Мой Мир❤️
-- content: отправить напоминание Комбату
-- deadline: None
-- status: pending
-- source_quote: "Комбату отправь напоминание"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-3ebe6d05
-- from: Valekk
-- to: Мой Мир❤️
-- content: скачать и скинуть фотки
-- deadline: None
-- status: pending
-- source_quote: "Скачай и скинь"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-15d243a9
-- from: Valekk
-- to: JARVIS
-- content: send you the VFL text, which describes in more detail the Essence of the context graph
-- deadline: None
-- status: pending
-- source_quote: "Сейчас я отправлю тебе текст VFL, в котором более подробно описано Сущность графа контекста"
-- source_date: 2026-02-14
-- confidence: 0.9
-
-## promise-228140e4
-- from: Valekk
-- to: JARVIS
-- content: создавать комит перед каждой настройкой новой функции
-- deadline: None
-- status: pending
-- source_quote: "Я хочу чтобы ты создавал комит перед каждой настройкой новой функции."
+- source_quote: "обещал скинуть отчет до пятницы"
 - source_date: 2026-02-14
 - confidence: 0.9
