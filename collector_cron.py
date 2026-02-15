@@ -80,10 +80,16 @@ def extract_with_gemini(text, chat_name):
     prompt = f"""You are JARVIS entity extractor. Current date: {TODAY}. Chat: {chat_name}.
 
 RULES:
-1. Anti-Noise: Ignore greetings, small talk, emotions without facts. Return empty arrays if nothing.
-2. Only extract if confidence >= 0.7
-3. Include source_quote (original text) for every entity
-4. Known actors: {json.dumps(known_actors)}
+1. Anti-Noise: Ignore greetings, small talk, pure emotions.
+2. **Implicit Tasks**: If a fact implies a concrete action, extract as PLAN.
+   - "Order arrived" → Plan: "Pick up order"
+3. **Principles vs Tasks**:
+   - Concrete actions (call, buy, go) → PLAN.
+   - Abstract stances (be polite, ignore haters, life rules) → DECISION.
+   - Example: "Communicate adequately" → Decision (Stance), NOT Plan.
+4. Only extract if confidence >= 0.7
+5. Include source_quote (original text) for every entity
+6. Known actors: {json.dumps(known_actors)}
 
 OUTPUT JSON:
 {{
