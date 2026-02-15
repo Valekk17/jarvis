@@ -48,7 +48,16 @@ Fabricating missing data is prohibited.
 
 ---
 
-## 3. Self-Optimization & Efficiency
+## 3. LLM Routing
+For token economy, route tasks to the cheapest capable model:
+- **Gemini (free)**: translations, simple factual questions, entity extraction, summarization, text classification
+  - Command: `cd /root/.openclaw/workspace && .venv/bin/python gemini_cli.py <cmd> "<text>"`
+  - Use `ask`, `tr`, `ext`, `sum` subcommands
+- **Claude (primary)**: complex reasoning, architecture, code, multi-step analysis, conversation
+
+Rule: If the task can be answered by a search engine or a simple LLM call — use Gemini. Only use Claude brain for tasks that require it.
+
+## 4. Self-Optimization & Efficiency
 You must continuously evaluate:
 - your response structure,
 - redundancy,
