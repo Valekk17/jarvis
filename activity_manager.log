@@ -10,3 +10,18 @@ https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/READM
 Activity Manager started at 2026-02-15 12:00:02.146282
 Loaded 0 new events (lines 640 to 640).
 Not enough events to cluster.
+/root/.openclaw/workspace/activity_manager.py:6: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving 
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+Activity Manager started at 2026-02-15 12:30:01.919825
+Loaded 10 new events (lines 640 to 650).
+Identified 1 clusters.
+Processing cluster: 10 events...
+  -> Saved Activity: Engaging in Chat Conversations
+Done.
