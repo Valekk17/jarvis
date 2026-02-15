@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<style>
+body { margin: 0; background: #111; color: #eee; font-family: sans-serif; overflow: hidden; }
+#graph { width: 100vw; height: 100vh; }
+</style>
+<div id="graph"></div>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const data = {"nodes": [{"id": 0, "label": "Evgeniya Kovalkova", "group": "Actor", "radius": 15, "full": "mother"}, {"id": 1, "label": "Andrey Kovalkov", "group": "Actor", "radius": 15, "full": "brother"}, {"id": 2, "label": "JARVIS", "group": "Actor", "radius": 15, "full": "Personal AI Operating System. Model: Claude Opus 4.6 + Gemini. Platform: OpenClaw."}, {"id": 3, "label": "Alexey Kosenko", "group": "Actor", "radius": 15, "full": "friend from Moscow"}, {"id": 4, "label": "Arisha", "group": "Actor", "radius": 15, "full": "wife, pregnant ~12.3 weeks, chat \u041c\u043e\u0439 \u041c\u0438\u0440\u2764\ufe0f, insurance issues, priority contact"}, {"id": 5, "label": "Valekk_17", "group": "Actor", "radius": 15, "full": "military serviceman, Serpukhov, building JARVIS bot, income ~3000 RUB mentioned"}, {"id": 6, "label": "\u043f\u0440\u0438\u0439\u0442\u0438", "group": "Promise", "radius": 10, "full": "\u041f\u0440\u0438\u0434\u0443\u2764\ufe0f"}, {"id": 7, "label": "\u043d\u0435 \u043f\u0440\u0438\u0439\u0442\u0438 \u043d\u0430 \u0443\u0436\u0438\u043d", "group": "Promise", "radius": 10, "full": "\u041d\u0435 \u043f\u0440\u0438\u0434\u0443 \u043d\u0430 \u0443\u0436\u0438\u043d"}, {"id": 8, "label": "\u0437\u0430\u043a\u0430\u0437\u0430\u0442\u044c \u0434\u0435\u0437\u043e\u0434\u043e\u0440\u0430\u043d\u0442\u044b", "group": "Promise", "radius": 10, "full": "\u0410 \u0435\u0449\u0435 \u0437\u0430\u043a\u0430\u0436\u0438 \u0434\u0435\u0437\u0438\u043a\u0438, \u043f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430"}, {"id": 9, "label": "\u043e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435 \u041a\u043e\u043c\u0431\u0430\u0442\u0443", "group": "Promise", "radius": 10, "full": "\u041a\u043e\u043c\u0431\u0430\u0442\u0443 \u043e\u0442\u043f\u0440\u0430\u0432\u044c \u043d\u0430\u043f\u043e\u043c\u0438\u043d\u0430\u043d\u0438\u0435"}, {"id": 10, "label": "\u0441\u043a\u0430\u0447\u0430\u0442\u044c \u0438 \u0441\u043a\u0438\u043d\u0443\u0442\u044c \u0444\u043e\u0442\u043a\u0438", "group": "Promise", "radius": 10, "full": "\u0421\u043a\u0430\u0447\u0430\u0439 \u0438 \u0441\u043a\u0438\u043d\u044c"}, {"id": 11, "label": "order deodorants", "group": "Promise", "radius": 10, "full": "\u0437\u0430\u043a\u0430\u0437\u0430\u0442\u044c \u0434\u0435\u0437\u043e\u0434\u043e\u0440\u0430\u043d\u0442\u044b"}, {"id": 12, "label": "insurance will be free", "group": "Promise", "radius": 10, "full": "\u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0430 \u0431\u0443\u0434\u0435\u0442 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u043e\u0439"}, {"id": 13, "label": "send report", "group": "Promise", "radius": 10, "full": "\u043e\u0431\u0435\u0449\u0430\u043b \u0441\u043a\u0438\u043d\u0443\u0442\u044c \u043e\u0442\u0447\u0435\u0442 \u0434\u043e \u043f\u044f\u0442\u043d\u0438\u0446\u044b"}, {"id": 14, "label": "\u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0438 \u0440\u0430\u0441\u0441\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0434\u0435\u0442\u044f\u043c \u043a\u0430\u043a \u0441\u0438\u043b\u044c\u043d\u043e \u0442\u0435\u0431\u044f \u043b\u044e\u0431\u043b\u044e \u0438 \u043a\u0430\u043a \u0442\u044b \u043c\u0435\u043d\u044f \u043b\u044e\u0431\u0438\u0448\u044c", "group": "Promise", "radius": 10, "full": "\u0412\u043e\u043e\u0431\u0449\u0435 \u0432\u0441\u0435\u0433\u0434\u0430 \u0431\u0443\u0434\u0443 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0438 \u0440\u0430\u0441\u0441\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0434\u0435\u0442\u044f\u043c \u043a\u0430\u043a \u0441\u0438\u043b\u044c\u043d\u043e \u0442\u0435\u0431\u044f \u043b\u044e\u0431\u043b\u044e \u0438 \u043a\u0430\u043a \u0442\u044b \u043c\u0435\u043d\u044f \u043b\u044e\u0431\u0438\u0448\u044c"}, {"id": 15, "label": "\u043d\u0430\u043f\u0438\u0441\u0430\u0442\u044c \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442\u0443", "group": "Decision", "radius": 10, "full": "\u041d\u0443 \u0432\u043e\u0442 \u044f \u043d\u0430\u043f\u0438\u0441\u0430\u043b\u0430 \u0430\u0441\u0441\u0438\u0441\u0442\u0435\u043d\u0442\u0443"}, {"id": 16, "label": "\u043d\u0430\u043f\u0438\u0441\u0430\u0442\u044c \u0432 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0443", "group": "Decision", "radius": 10, "full": "\u041d\u0430\u043f\u0438\u0441\u0430\u043b\u0430 \u0432 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0443"}, {"id": 17, "label": "\u0432\u044b\u0439\u0442\u0438 \u0432 18:30", "group": "Decision", "radius": 10, "full": "\u0422\u043e\u0433\u0434\u0430 \u043d\u0443\u0436\u043d\u043e \u0432 18.30 \u0432\u044b\u0445\u043e\u0434\u0438\u0442\u044c"}, {"id": 18, "label": "Use PostgreSQL in Docker for graph storage", "group": "Decision", "radius": 10, "full": "chosen over Neo4j"}, {"id": 19, "label": "All internal JARVIS files in English (saves ~30% t", "group": "Decision", "radius": 10, "full": "token economy"}, {"id": 20, "label": "Use Gemini Embeddings (gemini-embedding-001)", "group": "Decision", "radius": 10, "full": "semantic search"}, {"id": 21, "label": "Context graph in markdown files + PostgreSQL", "group": "Decision", "radius": 10, "full": "not Neo4j"}, {"id": 22, "label": "Switch to Claude Opus 4.6 as primary model", "group": "Decision", "radius": 10, "full": "better reasoning"}, {"id": 23, "label": "Adopt cybOS architecture for JARVIS", "group": "Decision", "radius": 10, "full": "structured memory"}, {"id": 24, "label": "\u0432\u043e\u0437\u0440\u0430\u0441\u0442 \u0441\u044b\u043d\u0430 Valekk'\u0430: 4.0 \u0433\u043e\u0434\u0430", "group": "Metric", "radius": 10, "full": "\u0443 \u043d\u0435\u0433\u043e \u0436\u0435\u043d\u0430 \u0440\u0435\u0431\u0435\u043d\u043e\u043a 4 \u0433\u043e\u0434\u0430 \u0441\u044b\u043d"}, {"id": 25, "label": "\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u043e \u043f\u043e\u043b\u0438\u0441\u0443 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u0430\u043d\u0438\u044f: 500.0 \u0440\u0443\u0431", "group": "Metric", "radius": 10, "full": "500\u0440\u0443\u0431 \u044d\u0442\u043e \u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u043e \u043f\u043e\u043b\u0438\u0441\u0443 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u0430\u043d\u0438\u044f"}, {"id": 26, "label": "\u0441\u0442\u0440\u0430\u0445\u043e\u0432\u0430\u044f \u0441\u0443\u043c\u043c\u0430: 150000.0 \u20bd", "group": "Metric", "radius": 10, "full": "\u0421\u0442\u0440\u0430\u0445\u043e\u0432\u0430\u044f \u0441\u0443\u043c\u043c\u0430 \u2014 \u0434\u043e 150 000 \u20bd"}, {"id": 27, "label": "\u043f\u0440\u043e\u0446\u0435\u043d\u0442 \u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0437\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0443 \u043e\u0442 \u043a\u044d\u0448\u0431\u044d\u043a\u0430: 20.0 %", "group": "Metric", "radius": 10, "full": "\u0417\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0443 \u0441\u043f\u0438\u0441\u044b\u0432\u0430\u0435\u043c 20% \u043e\u0442 \u043a\u044d\u0448\u0431\u044d\u043a\u0430"}, {"id": 28, "label": "\u043c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u043e\u0435 \u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0437\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0443: 20.0 \u20bd", "group": "Metric", "radius": 10, "full": "\u041c\u0438\u043d\u0438\u043c\u0443\u043c \u2014 20 \u20bd"}, {"id": 29, "label": "\u043c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u043e\u0435 \u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u0437\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0443: 500.0 \u20bd", "group": "Metric", "radius": 10, "full": "\u043c\u0430\u043a\u0441\u0438\u043c\u0443\u043c \u2014 500 \u20bd"}, {"id": 30, "label": "\u043f\u043e\u0440\u043e\u0433 \u043a\u044d\u0448\u0431\u044d\u043a\u0430 \u0434\u043b\u044f \u0441\u043f\u0438\u0441\u0430\u043d\u0438\u044f \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0438: 100.0 \u20bd", "group": "Metric", "radius": 10, "full": "\u043f\u0440\u0438 \u043a\u044d\u0448\u0431\u044d\u043a\u0435 \u043e\u0442 100 \u20bd"}, {"id": 31, "label": "\u0442\u0440\u0430\u0442\u044b: -500.0 \u0440\u0443\u0431\u043b\u0435\u0439", "group": "Metric", "radius": 10, "full": "\u0410 \u044f \u0437\u0430\u0448\u043b\u0430 \u0432 \u0442\u0440\u0430\u0442\u044b \u0438 \u0442\u0430\u043c -500 \u0440\u0443\u0431\u043b\u0435\u0439"}, {"id": 32, "label": "\u0441\u0443\u043c\u043c\u0430 \u0437\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043e\u0439 \u043f\u043e\u043b\u0438\u0441: -500.0 \u0440\u0443\u0431\u043b\u0435\u0439", "group": "Metric", "radius": 10, "full": "\u0423 \u043c\u0435\u043d\u044f -500 \u0440\u0443\u0431\u043b\u0435\u0439 \u0437\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043e\u0439 \u043f\u043e\u043b\u0438\u0441"}, {"id": 33, "label": "pregnancy_weeks: 12.3 weeks", "group": "Metric", "radius": 10, "full": "Arisha pregnancy ~12.3 weeks"}, {"id": 34, "label": "insurance_monthly_deduction: 500.0 RUB", "group": "Metric", "radius": 10, "full": "\u0441\u043f\u0438\u0441\u0430\u043d\u0438\u0435 \u043f\u043e \u043f\u043e\u043b\u0438\u0441\u0443 500 \u0440\u0443\u0431"}, {"id": 35, "label": "insurance_total_sum: 150000.0 RUB", "group": "Metric", "radius": 10, "full": "\u0421\u0442\u0440\u0430\u0445\u043e\u0432\u0430\u044f \u0441\u0443\u043c\u043c\u0430 150000\u20bd"}, {"id": 36, "label": "insurance_cashback_pct: 20.0 %", "group": "Metric", "radius": 10, "full": "20% \u043a\u044d\u0448\u0431\u044d\u043a\u0430 \u043d\u0430 \u0441\u0442\u0440\u0430\u0445\u043e\u0432\u043a\u0443"}, {"id": 37, "label": "phone_battery: 20.0 %", "group": "Metric", "radius": 10, "full": "\u0431\u0430\u0442\u0430\u0440\u0435\u044f 20%"}, {"id": 38, "label": "income_mentioned: 3000.0 RUB", "group": "Metric", "radius": 10, "full": "\u0434\u043e\u0445\u043e\u0434 3000 \u0440\u0443\u0431"}, {"id": 39, "label": "income_threshold_mrot: 8.0 \u041c\u0420\u041e\u0422", "group": "Metric", "radius": 10, "full": "\u043f\u043e\u0440\u043e\u0433 8 \u041c\u0420\u041e\u0422"}, {"id": 40, "label": "\u043f\u043e\u0432\u0435\u0441\u0442\u0438 \u0432 \u0441\u0442\u043e\u043b\u043e\u0432\u043a\u0443", "group": "Plan", "radius": 10, "full": "\u042f \u0436\u0435 \u0432 \u0441\u0442\u043e\u043b\u043e\u0432\u043a\u0443 \u043f\u043e\u0432\u0435\u0434\u0443"}, {"id": 41, "label": "\u043f\u043e\u0439\u0442\u0438 \u0432\u0435\u0447\u0435\u0440\u043e\u043c \u0437\u0430 \u0442\u0435\u0441\u0442\u043e\u043c \u0432 \u043c\u043e\u043d\u0435\u0442\u043e\u0447\u043a\u0443", "group": "Plan", "radius": 10, "full": "\u0422\u0430\u043a, \u0432\u0435\u0447\u0435\u0440\u043e\u043c \u0437\u0430 \u0442\u0435\u0441\u0442\u043e\u043c \u0432 \u043c\u043e\u043d\u0435\u0442\u043e\u0447\u043a\u0443"}, {"id": 42, "label": "\u0441\u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u0442\u0430\u0431\u043b\u0438\u0447\u043a\u0443", "group": "Plan", "radius": 10, "full": "\u041d\u0430\u0434\u043e \u0432\u043e\u043e\u0431\u0449\u0435 \u0441\u043e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435 \u0442\u0430\u0431\u043b\u0438\u0447\u043a\u0443"}, {"id": 43, "label": "\u0441\u0434\u0435\u043b\u0430\u0442\u044c \u0434\u0435\u043b\u0430", "group": "Plan", "radius": 10, "full": "\u041d\u0430\u0434\u043e \u0441\u0434\u0435\u043b\u0430\u0442\u044c \u0434\u0435\u043b\u0430 \u0442\u043e"}, {"id": 44, "label": "\u043f\u043e\u043a\u0438\u0434\u0430\u0442\u044c \u0432\u0441\u0435\u043c \u043a\u043e\u043b\u043b\u0430\u0436 \u0444\u043e\u0442\u043e\u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438", "group": "Plan", "radius": 10, "full": "\u041d\u0430\u0434\u043e \u0438\u043c \u0432\u0441\u0435\u043c \u043a\u043e\u043b\u043b\u0430\u0436 \u0444\u043e\u0442\u043e\u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438 \u043f\u043e\u043a\u0438\u0434\u0430\u0442\u044c \u043d\u0430\u0432\u0435\u0440\u043d\u043e\u0435"}, {"id": 45, "label": "PostgreSQL in Docker for graph + visualization", "group": "Plan", "radius": 10, "full": "PostgreSQL \u0433\u0440\u0430\u0444 \u2014 \u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u0441\u0443\u0449\u043d\u043e\u0441\u0442\u0435\u0439"}, {"id": 46, "label": "Baby due before September 2026", "group": "Plan", "radius": 10, "full": "\u0440\u0435\u0431\u0435\u043d\u043e\u043a \u0440\u043e\u0434\u0438\u0442\u0441\u044f \u0434\u043e \u0441\u0435\u043d\u0442\u044f\u0431\u0440\u044f"}, {"id": 47, "label": "Write to insurance support", "group": "Plan", "radius": 10, "full": "\u043d\u0430\u043f\u0438\u0441\u0430\u0442\u044c \u0432 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u0443"}, {"id": 48, "label": "Make photo collage and send to everyone", "group": "Plan", "radius": 10, "full": "\u0441\u0434\u0435\u043b\u0430\u0442\u044c \u043a\u043e\u043b\u043b\u0430\u0436 \u0438\u0437 \u0444\u043e\u0442\u043e\u0433\u0440\u0430\u0444\u0438\u0439"}, {"id": 49, "label": "Submit appeal", "group": "Plan", "radius": 10, "full": "\u043f\u043e\u0434\u0430\u0442\u044c \u0430\u043f\u0435\u043b\u043b\u044f\u0446\u0438\u044e"}, {"id": 50, "label": "Implement semantic search over dialogs", "group": "Plan", "radius": 10, "full": "\u0421\u0435\u043c\u0430\u043d\u0442\u0438\u0447\u0435\u0441\u043a\u0438\u0439 \u043f\u043e\u0438\u0441\u043a \u043f\u043e \u0434\u0438\u0430\u043b\u043e\u0433\u0430\u043c"}, {"id": 51, "label": "Process all key Telegram chats (not just Arisha)", "group": "Plan", "radius": 10, "full": "\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u0434\u0440\u0443\u0433\u0438\u0445 \u0447\u0430\u0442\u043e\u0432 (\u043f\u043e\u043a\u0430 \u0442\u043e\u043b\u044c\u043a\u043e \u0410\u0440\u0438\u0448\u0430)"}, {"id": 52, "label": "Build MCP Server for automatic graph queries befor", "group": "Plan", "radius": 10, "full": "\u043e\u0431\u0435\u0440\u043d\u0443\u0442\u044c \u0433\u0440\u0430\u0444 \u043a\u0430\u043a MCP Server"}, {"id": 53, "label": "Cron-based auto-collector: Telegram \u2192 Gemini extra", "group": "Plan", "radius": 10, "full": "Auto-collector cron \u0434\u043b\u044f Telegram ingestion"}, {"id": 54, "label": "Integrate Obsidian vault for voice \u2192 transcription", "group": "Plan", "radius": 10, "full": "Obsidian \u2014 \u0413\u043e\u043b\u043e\u0441 \u2192 \u0442\u0440\u0430\u043d\u0441\u043a\u0440\u0438\u043f\u0446\u0438\u044f \u2192 \u0437\u0430\u043c\u0435\u0442\u043a\u0430"}, {"id": 55, "label": "voice_watcher.py as systemd service (auto-restart)", "group": "Plan", "radius": 10, "full": "voice_watcher \u043a\u0430\u043a systemd service"}, {"id": 56, "label": "Use Gemini 2.5 Pro (free) for all entity extractio", "group": "Plan", "radius": 10, "full": "Gemini free tier \u0434\u043b\u044f extraction, Claude \u0442\u043e\u043b\u044c\u043a\u043e \u0434\u043b\u044f \u043e\u0442\u0432\u0435\u0442\u043e\u0432"}, {"id": 57, "label": "\u043f\u0440\u0438\u0435\u0445\u0430\u0442\u044c \u043a \u0441\u044b\u043d\u0443", "group": "Plan", "radius": 10, "full": "\u0441\u044b\u043d\u0430 \u0441\u043a\u043e\u0440\u043e \u043f\u0440\u0438\u0435\u0434\u0443"}, {"id": 58, "label": "Code Execution", "group": "Skill", "radius": 8, "full": "Python, bash, Docker, PostgreSQL, file management"}, {"id": 59, "label": "Context Graph", "group": "Skill", "radius": 8, "full": "Entity extraction, semantic search, relationship mapping"}, {"id": 60, "label": "Memory System", "group": "Skill", "radius": 8, "full": "Long-term memory, daily logs, entity registry"}, {"id": 61, "label": "Proactive Tasks", "group": "Skill", "radius": 8, "full": "Cron jobs, heartbeat checks, reminders, scheduled actions"}, {"id": 62, "label": "Telegram Integration", "group": "Skill", "radius": 8, "full": "Read/send messages, read chats, search contacts"}, {"id": 63, "label": "Text-to-Speech", "group": "Skill", "radius": 8, "full": "Voice synthesis for responses"}, {"id": 64, "label": "Voice Processing", "group": "Skill", "radius": 8, "full": "Whisper transcription (base model), voice command recognition"}, {"id": 65, "label": "Web Access", "group": "Skill", "radius": 8, "full": "Search (Brave), fetch pages, browser automation"}, {"id": 66, "label": "Valek", "group": "Person", "radius": 10, "full": "Valek"}], "links": [{"source": 11, "target": 4, "value": 1, "type": "TO"}, {"source": 5, "target": 11, "value": 1, "type": "PROMISED"}, {"source": 4, "target": 12, "value": 1, "type": "PROMISED"}, {"source": 12, "target": 5, "value": 1, "type": "TO"}, {"source": 3, "target": 13, "value": 1, "type": "PROMISED"}, {"source": 13, "target": 5, "value": 1, "type": "TO"}, {"source": 5, "target": 15, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 16, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 17, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 18, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 19, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 20, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 21, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 22, "value": 1, "type": "DECIDED"}, {"source": 5, "target": 23, "value": 1, "type": "DECIDED"}, {"source": 4, "target": 33, "value": 1, "type": "MEASURED"}, {"source": 4, "target": 34, "value": 1, "type": "MEASURED"}, {"source": 4, "target": 35, "value": 1, "type": "MEASURED"}, {"source": 4, "target": 36, "value": 1, "type": "MEASURED"}, {"source": 4, "target": 37, "value": 1, "type": "MEASURED"}, {"source": 5, "target": 38, "value": 1, "type": "MEASURED"}, {"source": 5, "target": 39, "value": 1, "type": "MEASURED"}, {"source": 5, "target": 45, "value": 1, "type": "PLANS"}, {"source": 4, "target": 46, "value": 1, "type": "PLANS"}, {"source": 4, "target": 47, "value": 1, "type": "PLANS"}, {"source": 5, "target": 48, "value": 1, "type": "PLANS"}, {"source": 5, "target": 49, "value": 1, "type": "PLANS"}, {"source": 5, "target": 50, "value": 1, "type": "PLANS"}, {"source": 5, "target": 51, "value": 1, "type": "PLANS"}, {"source": 5, "target": 52, "value": 1, "type": "PLANS"}, {"source": 5, "target": 53, "value": 1, "type": "PLANS"}, {"source": 5, "target": 54, "value": 1, "type": "PLANS"}, {"source": 5, "target": 55, "value": 1, "type": "PLANS"}, {"source": 5, "target": 56, "value": 1, "type": "PLANS"}, {"source": 5, "target": 57, "value": 1, "type": "PLANS"}, {"source": 2, "target": 58, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 59, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 60, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 61, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 62, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 63, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 64, "value": 1, "type": "HAS_SKILL"}, {"source": 2, "target": 65, "value": 1, "type": "HAS_SKILL"}, {"source": 5, "target": 4, "value": 1, "type": "SPOUSE"}, {"source": 5, "target": 0, "value": 1, "type": "SON_OF"}, {"source": 5, "target": 1, "value": 1, "type": "BROTHER"}, {"source": 5, "target": 3, "value": 1, "type": "FRIEND"}, {"source": 5, "target": 2, "value": 1, "type": "OWNS"}]};
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+const color = d3.scaleOrdinal()
+    .domain(["Actor", "Promise", "Plan", "Decision", "Metric", "Skill", "Person"])
+    .range(["#44ff44", "#ffff44", "#44ffff", "#ff44ff", "#888888", "#aaaaaa", "#ff4444"]);
+
+const svg = d3.select("#graph").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", (event) => g.attr("transform", event.transform)))
+    .append("g");
+
+const g = svg.append("g");
+
+// Arrow marker
+svg.append("defs").selectAll("marker")
+    .data(["end"])
+    .enter().append("marker")
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 25)
+    .attr("refY", 0)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5")
+    .attr("fill", "#999");
+
+const simulation = d3.forceSimulation(data.nodes)
+    .force("link", d3.forceLink(data.links).id(d => d.id).distance(120))
+    .force("charge", d3.forceManyBody().strength(-400))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collide", d3.forceCollide(d => d.radius + 10));
+
+const link = g.append("g")
+    .attr("stroke", "#999")
+    .attr("stroke-opacity", 0.6)
+    .selectAll("line")
+    .data(data.links)
+    .join("line")
+    .attr("marker-end", "url(#end)");
+
+const node = g.append("g")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 1.5)
+    .selectAll("circle")
+    .data(data.nodes)
+    .join("circle")
+    .attr("r", d => d.radius)
+    .attr("fill", d => color(d.group))
+    .call(drag(simulation));
+
+node.append("title").text(d => d.full || d.label);
+
+const label = g.append("g")
+    .selectAll("text")
+    .data(data.nodes)
+    .join("text")
+    .attr("dx", 15)
+    .attr("dy", 4)
+    .text(d => d.label)
+    .attr("fill", "#ddd")
+    .style("font-size", "12px")
+    .style("pointer-events", "none");
+
+// Edge labels
+const edgeLabel = g.append("g")
+    .selectAll("text")
+    .data(data.links)
+    .join("text")
+    .text(d => d.type)
+    .attr("fill", "#666")
+    .style("font-size", "8px");
+
+simulation.on("tick", () => {
+    link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+    node
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+        
+    label
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+        
+    edgeLabel
+        .attr("x", d => (d.source.x + d.target.x) / 2)
+        .attr("y", d => (d.source.y + d.target.y) / 2);
+});
+
+function drag(simulation) {
+  function dragstarted(event) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    event.subject.fx = event.subject.x;
+    event.subject.fy = event.subject.y;
+  }
+  
+  function dragged(event) {
+    event.subject.fx = event.x;
+    event.subject.fy = event.y;
+  }
+  
+  function dragended(event) {
+    if (!event.active) simulation.alphaTarget(0);
+    event.subject.fx = null;
+    event.subject.fy = null;
+  }
+  
+  return d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended);
+}
+</script>
+

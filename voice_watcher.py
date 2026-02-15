@@ -5,7 +5,17 @@ import shutil
 import sys
 
 sys.path.insert(0, "/root/.openclaw/workspace")
-from jarvis_extractor import extract
+# from jarvis_extractor import extract
+
+def extract(text):
+    """Extract entities via gemini_cli."""
+    try:
+        res = subprocess.run(["/root/.openclaw/workspace/.venv/bin/python", "/root/.openclaw/workspace/gemini_cli.py", "ext", text], 
+                            capture_output=True, text=True, timeout=30)
+        return res.stdout
+    except Exception as e:
+        print(f"Extraction failed: {e}")
+        return "{}"
 
 INBOUND_DIR = "/root/.openclaw/media/inbound"
 ARCHIVE_DIR = "/root/.openclaw/media/archive"
