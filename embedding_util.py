@@ -27,7 +27,7 @@ def get_embedding(text, manager):
                     task_type="retrieval_document",
                     title="Embedding of chunk"
                 )
-            return result['embedding'][:768]
+            return result['embedding']
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower() or "ResourceExhausted" in str(e):
                 # print(f"Error (429) rotating...")

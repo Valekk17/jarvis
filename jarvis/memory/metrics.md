@@ -1,120 +1,100 @@
 # Metrics
 
-<!-- Format:
-## metric-{uuid}
-- actor: actor_id or null
-- name: metric name
-- value: number
-- unit: string
-- date: YYYY-MM-DD
-- source_quote: "exact quote"
-- confidence: 0.0-1.0
--->
-
-## metric-preg-001
-- actor: actor-arisha
-- name: pregnancy_week
-- value: 12.3
-- unit: weeks
-- date: 2026-02-14
-- source_quote: "12.3 недели"
+## metric-087ee397
+- name: Pregnancy
+- value: 12.3 weeks
+- date: 2026-02-15
 - confidence: 0.9
+- decayed_conf: 0.90 (✓)
 
-## metric-ins-001
-- actor: actor-arisha
-- name: insurance_deduction
-- value: 500
-- unit: RUB/month
-- date: 2026-02-14
-- source_quote: "списание по полису страхования 500 руб"
-- confidence: 0.9
-
-## metric-ins-002
-- actor: actor-arisha
-- name: insurance_sum
-- value: 150000
-- unit: RUB
-- date: 2026-02-14
-- source_quote: "Страховая сумма 150000₽"
-- confidence: 0.9
-
-## metric-4533a1f8
-- actor: null
-- name: возраст сына Valekk'а
-- value: 4
-- unit: года
-- date: 2026-02-14
-- source_quote: "у него жена ребенок 4 года сын"
-- confidence: 0.9
-
-## metric-aa3b6885
-- actor: null
+## metric-26e62ef8
 - name: списание по полису страхования
-- value: 500
-- unit: руб
+- value: 500.0 руб
 - date: 2026-02-14
-- source_quote: "500руб это списание по полису страхования"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-44858746
-- actor: null
+## metric-c6013a3a
 - name: страховая сумма
-- value: 150000
-- unit: ₽
+- value: 150000.0 ₽
 - date: 2026-02-14
-- source_quote: "Страховая сумма — до 150 000 ₽"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-e76e5fbc
-- actor: null
+## metric-89f8ded5
 - name: процент списания за страховку от кэшбэка
-- value: 20
-- unit: %
+- value: 20.0 %
 - date: 2026-02-14
-- source_quote: "За страховку списываем 20% от кэшбэка"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-e15a5fe6
-- actor: null
+## metric-c44e8a64
 - name: минимальное списание за страховку
-- value: 20
-- unit: ₽
+- value: 20.0 ₽
 - date: 2026-02-14
-- source_quote: "Минимум — 20 ₽"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-ef1f9e2e
-- actor: null
+## metric-c40e829e
 - name: максимальное списание за страховку
-- value: 500
-- unit: ₽
+- value: 500.0 ₽
 - date: 2026-02-14
-- source_quote: "максимум — 500 ₽"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-1b8e4b21
-- actor: null
+## metric-b2cc5344
 - name: порог кэшбэка для списания страховки
-- value: 100
-- unit: ₽
+- value: 100.0 ₽
 - date: 2026-02-14
-- source_quote: "при кэшбэке от 100 ₽"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-d877671b
-- actor: null
-- name: траты
-- value: -500
-- unit: рублей
+## metric-d792707d
+- name: возраст сына Valekk'а
+- value: 4.0 года
 - date: 2026-02-14
-- source_quote: "А я зашла в траты и там -500 рублей"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
 
-## metric-b2af0f74
-- actor: null
-- name: сумма за страховой полис
-- value: -500
-- unit: рублей
+## metric-ins-ded
+- name: insurance_monthly_deduction
+- value: 500.0 RUB
 - date: 2026-02-14
-- source_quote: "У меня -500 рублей за страховой полис"
 - confidence: 0.9
+- decayed_conf: 0.89 (✓)
+
+## metric-ins-sum
+- name: insurance_total_sum
+- value: 150000.0 RUB
+- date: 2026-02-14
+- confidence: 0.9
+- decayed_conf: 0.89 (✓)
+
+## metric-ins-pct
+- name: insurance_cashback_pct
+- value: 20.0 %
+- date: 2026-02-14
+- confidence: 0.9
+- decayed_conf: 0.89 (✓)
+
+## metric-income
+- name: income_mentioned
+- value: 3000.0 RUB
+- date: 2026-02-14
+- confidence: 0.9
+- decayed_conf: 0.89 (✓)
+
+## metric-mrot
+- name: income_threshold_mrot
+- value: 8.0 МРОТ
+- date: 2026-02-14
+- confidence: 0.9
+- decayed_conf: 0.89 (✓)
+
+## metric-preg
+- name: pregnancy_weeks
+- value: 12.3 weeks
+- date: 2026-02-14
+- confidence: 0.9
+- decayed_conf: 0.89 (✓)
+

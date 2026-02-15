@@ -1,16 +1,24 @@
-# Active Promises
+# Promises
 
-<!-- Format:
-## promise-{uuid}
-- from: actor_id
-- to: actor_id
-- content: what was promised
-- deadline: date or null
-- status: pending | done | failed | expired
-- source_quote: "exact quote"
-- source_date: YYYY-MM-DD
-- confidence: 0.0-1.0
--->
+## promise-7401d6a3
+- from: actor-owner
+- to: actor-arisha
+- content: прийти
+- deadline: null
+- status: expired
+- source_quote: "Приду❤️"
+- source_date: 2026-02-14
+- confidence: 0.9
+
+## promise-cb58ea89
+- from: actor-owner
+- to: actor-arisha
+- content: не прийти на ужин
+- deadline: null
+- status: expired
+- source_quote: "Не приду на ужин"
+- source_date: 2026-02-14
+- confidence: 0.9
 
 ## promise-42b1f8dc
 - from: actor-arisha
@@ -71,3 +79,4 @@
 - source_quote: "обещал скинуть отчет до пятницы"
 - source_date: 2026-02-14
 - confidence: 0.9
+
