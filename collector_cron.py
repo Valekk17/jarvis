@@ -1,30 +1,38 @@
 #!/usr/bin/env python3
 """
-JARVIS Auto-Collector
-Cron-driven: reads recent Telegram messages → Gemini 2.5 Pro extraction → DB + md
+JARVIS Auto-Collector v2
+Reads recent Telegram messages → Gemini extraction → markdown files
+No PostgreSQL dependency. Built-in OpenClaw memory indexer picks up changes.
 """
 import subprocess
 import json
 import os
 import sys
-import uuid
+import hashlib
 import time
-import psycopg2
 from datetime import date, datetime
 
 # Config
-PG_DSN = "postgresql://jarvis_user:jarvis_password@localhost:5432/jarvis_db"
 JARVIS_DIR = "/root/.openclaw/workspace/jarvis"
-STATE_FILE = "/root/.openclaw/workspace/jarvis/memory/collector_state.json"
+MEMORY_DIR = os.path.join(JARVIS_DIR, "memory")
+STATE_FILE = os.path.join(MEMORY_DIR, "collector_state.json")
+GRAPH_FILE = os.path.join(MEMORY_DIR, "context_graph.md")
 TODAY = date.today().isoformat()
 
-# Personal chats to monitor (name, messages_per_run)
+# Personal chats to monitor
 CHATS = [
     ("Мой Мир❤️", 50),       # Wife Arisha
 ]
 
-# Gemini extraction
-import google.generativeai as genai
+# Gemini
+try:
+    from google import genai
+    from google.genai import types
+    USE_NEW_API = True
+except ImportError:
+    import google.generativeai as genai
+    USE_NEW_API = False
+
 sys.path.insert(0, "/root/.openclaw/workspace")
 from key_manager import KeyManager
 
@@ -32,13 +40,19 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"last_run": None, "processed_chats": {}}
+    return {"last_run": None, "processed_chats": {}, "seen_hashes": []}
 
 def save_state(state):
     state["last_run"] = datetime.now().isoformat()
+    # Keep only last 500 hashes
+    state["seen_hashes"] = state.get("seen_hashes", [])[-500:]
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
+
+def content_hash(text):
+    """Generate hash for deduplication."""
+    return hashlib.md5(text.strip().lower().encode()).hexdigest()
 
 def read_chat(chat_name, limit=50):
     try:
@@ -65,11 +79,11 @@ def read_chat(chat_name, limit=50):
         return ""
 
 def extract_with_gemini(text, chat_name):
-    """Extract entities using Gemini 2.5 Pro (free tier)."""
+    """Extract entities using Gemini."""
     manager = KeyManager()
     
     # Load known actors
-    actors_file = os.path.join(JARVIS_DIR, "memory/actors.md")
+    actors_file = os.path.join(MEMORY_DIR, "actors.md")
     known_actors = []
     if os.path.exists(actors_file):
         with open(actors_file) as f:
@@ -103,118 +117,151 @@ TEXT:
 "{text[:6000]}"
 """
 
-    max_retries = len(manager.keys) * 2
+    max_retries = 10
     for attempt in range(max_retries):
         key = manager.get_key()
-        genai.configure(api_key=key)
-        # Try Pro first, fallback to Flash
-        model_name = 'models/gemini-2.5-pro' if attempt < 3 else 'models/gemini-2.5-flash'
-        model = genai.GenerativeModel(model_name)
         try:
-            response = model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
-            return json.loads(response.text)
+            if USE_NEW_API:
+                client = genai.Client(api_key=key)
+                config = types.GenerateContentConfig(temperature=0.1)
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                    config=config,
+                )
+                return response.text
+            else:
+                genai.configure(api_key=key)
+                model = genai.GenerativeModel("models/gemini-2.5-pro")
+                response = model.generate_content(prompt)
+                return response.text
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
                 manager.rotate()
-                time.sleep(2)
+                print(f"Rotating to key index {manager.current_index}...")
                 continue
             print(f"  ❌ Gemini error: {e}")
-            return {}
-    return {}
+            return None
+    return None
 
-ACTOR_MAP = {
-    "valekk": "actor-owner", "valekk_17": "actor-owner", "я": "actor-owner", "me": "actor-owner",
-    "arisha": "actor-arisha", "ариша": "actor-arisha", "жена": "actor-arisha", "wife": "actor-arisha",
-    "мой мир❤️": "actor-arisha", "мой мир": "actor-arisha",
-    "leha": "actor-leha-kosenko", "леха": "actor-leha-kosenko", "лёха": "actor-leha-kosenko",
-    "alexey kosenko": "actor-leha-kosenko", "косенко": "actor-leha-kosenko",
-    "мама": "actor-evgeniya", "evgeniya": "actor-evgeniya",
-    "андрей": "actor-andrey", "брат": "actor-andrey",
-}
+def parse_json(text):
+    """Parse JSON from Gemini response."""
+    if not text:
+        return None
+    text = text.strip()
+    if text.startswith("```"):
+        text = "\n".join(text.split("\n")[1:])
+    if text.endswith("```"):
+        text = text.rsplit("```", 1)[0]
+    try:
+        return json.loads(text.strip())
+    except:
+        return None
 
-def resolve_actor(name):
-    return ACTOR_MAP.get(name.lower().strip(), name)
-
-def save_entities(data, chat_name):
-    """Save to PostgreSQL + md files with actor resolution."""
-    conn = psycopg2.connect(PG_DSN)
-    cur = conn.cursor()
+def append_to_graph(data, state):
+    """Append new entities to context_graph.md with deduplication."""
+    seen = set(state.get("seen_hashes", []))
+    
+    # Read existing file
+    existing = ""
+    if os.path.exists(GRAPH_FILE):
+        with open(GRAPH_FILE) as f:
+            existing = f.read()
+    
+    new_lines = []
     saved = 0
-
-    for p in data.get("promises", []):
-        uid = f"promise-{uuid.uuid4().hex[:8]}"
-        from_a = resolve_actor(p.get('from',''))
-        to_a = resolve_actor(p.get('to',''))
-        try:
-            cur.execute("""INSERT INTO promises (id, from_actor, to_actor, content, deadline, status, source_quote, source_date, confidence)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-                (uid, from_a, to_a, p.get('content',''),
-                 p.get('deadline'), p.get('status','pending'), p.get('source_quote',''), TODAY, p.get('confidence',0.8)))
+    
+    for entity_type in ["promises", "decisions", "metrics", "plans"]:
+        items = data.get(entity_type, [])
+        for item in items:
+            # Create content string for hashing
+            if entity_type == "metrics":
+                content_str = f"{item.get('name','')}: {item.get('value','')}"
+            else:
+                content_str = item.get('content', '')
+            
+            h = content_hash(content_str)
+            if h in seen:
+                continue
+            seen.add(h)
+            
+            # Format line
+            quote = item.get('source_quote', '')
+            conf = item.get('confidence', 0)
+            
+            if entity_type == "promises":
+                line = f"- [pending] {content_str} | From: {item.get('from','')} → {item.get('to','')} | Deadline: {item.get('deadline','none')} | Quote: \"{quote}\""
+            elif entity_type == "decisions":
+                line = f"- {content_str} | Date: {item.get('date', TODAY)} | Quote: \"{quote}\""
+            elif entity_type == "metrics":
+                line = f"- **{item.get('name','')}**: {item.get('value','')} {item.get('unit','')} | Quote: \"{quote}\""
+            elif entity_type == "plans":
+                line = f"- [{item.get('status','active')}] {content_str} | Target: {item.get('target_date','none')} | Quote: \"{quote}\""
+            
+            new_lines.append((entity_type, line))
             saved += 1
-        except: conn.rollback()
-
-    for d in data.get("decisions", []):
-        uid = f"decision-{uuid.uuid4().hex[:8]}"
-        try:
-            cur.execute("""INSERT INTO decisions (id, content, decision_date, source_quote, confidence)
-                VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-                (uid, d.get('content',''), d.get('date',TODAY), d.get('source_quote',''), d.get('confidence',0.8)))
-            saved += 1
-        except: conn.rollback()
-
-    for m in data.get("metrics", []):
-        uid = f"metric-{uuid.uuid4().hex[:8]}"
-        try:
-            cur.execute("""INSERT INTO metrics (id, name, value, unit, metric_date, source_quote, confidence)
-                VALUES (%s,%s,%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-                (uid, m.get('name',''), m.get('value',0), m.get('unit',''), TODAY, m.get('source_quote',''), m.get('confidence',0.8)))
-            saved += 1
-        except: conn.rollback()
-
-    for p in data.get("plans", []):
-        uid = f"plan-{uuid.uuid4().hex[:8]}"
-        try:
-            cur.execute("""INSERT INTO plans (id, actor_id, content, status, source_quote, confidence)
-                VALUES (%s,'actor-owner',%s,%s,%s,%s) ON CONFLICT DO NOTHING""",
-                (uid, p.get('content',''), p.get('status','active'), p.get('source_quote',''), p.get('confidence',0.8)))
-            saved += 1
-        except: conn.rollback()
-
-    conn.commit()
-    conn.close()
+    
+    # Append to file by section
+    if new_lines and os.path.exists(GRAPH_FILE):
+        with open(GRAPH_FILE) as f:
+            content = f.read()
+        
+        for entity_type, line in new_lines:
+            section = entity_type.capitalize()
+            marker = f"## {section}"
+            if marker in content:
+                content = content.replace(marker, f"{marker}\n{line}")
+            else:
+                content += f"\n\n{marker}\n{line}"
+        
+        with open(GRAPH_FILE, 'w') as f:
+            f.write(content)
+    elif new_lines:
+        # Create new file
+        sections = {}
+        for entity_type, line in new_lines:
+            sections.setdefault(entity_type, []).append(line)
+        with open(GRAPH_FILE, 'w') as f:
+            f.write("# Context Graph Entities\n\n")
+            for sec, lines in sections.items():
+                f.write(f"## {sec.capitalize()}\n")
+                f.write("\n".join(lines) + "\n\n")
+    
+    # Update seen hashes
+    state["seen_hashes"] = list(seen)
     return saved
 
-def run():
+def main():
     state = load_state()
-    print(f"🚀 JARVIS Collector | {datetime.now().isoformat()}")
+    print(f"🚀 JARVIS Collector v2 (markdown) | {datetime.now().isoformat()}")
     print(f"   Last run: {state.get('last_run', 'never')}")
     
     total_saved = 0
+    
     for chat_name, limit in CHATS:
         print(f"\n📥 {chat_name} (limit={limit})")
         text = read_chat(chat_name, limit)
-        if not text or len(text) < 30:
-            print(f"  ⚠ Skip (too short)")
+        if not text:
+            print("  No messages found")
             continue
-        print(f"  {len(text)} chars → Gemini 2.5 Pro...")
         
+        print(f"  {len(text)} chars → Gemini...")
         result = extract_with_gemini(text, chat_name)
-        if not result:
-            print(f"  ⚠ Empty result")
+        data = parse_json(result)
+        
+        if not data:
+            print("  ❌ No valid JSON returned")
             continue
         
-        counts = {k: len(v) for k, v in result.items() if isinstance(v, list)}
+        counts = {k: len(v) for k, v in data.items() if isinstance(v, list)}
         print(f"  Extracted: {counts}")
         
-        saved = save_entities(result, chat_name)
+        saved = append_to_graph(data, state)
+        print(f"  ✓ Saved {saved} new entities (deduped)")
         total_saved += saved
-        print(f"  ✓ Saved {saved} entities")
-        
-        state["processed_chats"][chat_name] = {"last": datetime.now().isoformat(), "entities": saved}
     
     save_state(state)
     print(f"\n🏆 Total saved: {total_saved}")
-    return total_saved
 
 if __name__ == "__main__":
-    run()
+    main()
