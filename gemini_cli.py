@@ -157,6 +157,40 @@ Return ONLY JSON. No markdown, no explanation."""
             print(result)
 
 
+def cmd_audio(args):
+    """Transcribe audio using Gemini."""
+    manager = KeyManager()
+    key = manager.get_key()
+    
+    # MIME type detection
+    ext = os.path.splitext(args.file)[1].lower()
+    mime = "audio/ogg" if ext == ".ogg" else "audio/mp3"
+    
+    try:
+        if USE_NEW_API:
+            client = genai.Client(api_key=key)
+            with open(args.file, "rb") as f:
+                file_data = f.read()
+            
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Content(
+                        parts=[
+                            types.Part.from_bytes(data=file_data, mime_type=mime),
+                            types.Part.from_text(text="Transcribe this audio verbatim.")
+                        ]
+                    )
+                ]
+            )
+            print(response.text)
+        else:
+            print("Legacy genai not supported for audio. Update libs.", file=sys.stderr)
+            
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+
+
 def cmd_summarize(args):
     """Summarize text."""
     text = args.text
@@ -190,6 +224,10 @@ def main():
     p_ext.add_argument("text", nargs="*", default=[])
     p_ext.add_argument("-f", "--file", help="Read from file")
 
+    # audio
+    p_aud = sub.add_parser("audio", help="Transcribe audio")
+    p_aud.add_argument("file", help="Audio file path")
+
     # summarize
     p_sum = sub.add_parser("sum", help="Summarize")
     p_sum.add_argument("text", nargs="*", default=[])
@@ -209,6 +247,7 @@ def main():
         "ask": cmd_ask,
         "tr": cmd_translate,
         "ext": cmd_extract,
+        "audio": cmd_audio,
         "sum": cmd_summarize,
     }
     commands[args.command](args)
