@@ -23,27 +23,32 @@ def refine():
     with open(GRAPH_FILE) as f:
         content = f.read()
 
-    prompt = f"""You are a strict Knowledge Graph Editor for JARVIS.
-Refactor the following Markdown content.
+    ontology_file = "/root/.openclaw/workspace/jarvis/ONTOLOGY.md"
+    ontology = ""
+    if os.path.exists(ontology_file):
+        with open(ontology_file) as f: ontology = f.read()
 
-RULES:
-1. **Deduplicate Aggressively**: Merge items that mean the same thing (e.g., "call grandma", "Call Grandma Galya", "позвонить бабушке"). Keep the most detailed version.
-2. **Remove Noise**: DELETE any item that is:
-   - A status ("I am ready", "I am here", "arrived").
-   - Vague ("solve problem", "do it", "fill something").
-   - Expired/Old daily routine ("go home").
-   - Duplicate of another item (even if phrasing differs).
-3. **Enforce Relations**: Ensure EVERY Promise, Plan, Decision has an `| Actor: Name` or `| From: X -> Y` field.
-   - If missing, infer from context (Valekk_17 is the default owner).
-4. **Structure**: Keep sections: Actors, Promises, Decisions, Metrics, Plans.
-5. **Format**:
-   - Actors: `- **Name** | Role: ... | Relations: ...`
-   - Others: `- [status] Content | Actor: Name | ...`
+    prompt = f"""You are the JARVIS Knowledge Graph Architect.
+Your task: Re-validate and format every item in the Graph against the Strict Ontology.
 
-Input Graph:
+ONTOLOGY RULES:
+{ontology}
+
+INSTRUCTIONS:
+1. **Analyze** each item in the Input Graph.
+2. **Discard** items with confidence < 0.7 or vague/noise (e.g. "be ready").
+3. **Format** items strictly as Markdown list entries, but include ALL required fields from Ontology if available.
+   - Actors: `- **Name** | Role: ... | Context: ...`
+   - Plans: `- [status] Content | Actor: ... | Target Date: ... | Quote: ... | Confidence: ...`
+   - Promises: `- [status] Content | From: ... -> To: ... | Quote: ... | Confidence: ...`
+4. **Enforce** naming: "Valekk_17", "Arisha", etc.
+5. **Deduplicate**.
+
+INPUT GRAPH:
 {content}
 
-Output ONLY the cleaned Markdown.
+OUTPUT:
+Refactored Markdown Graph.
 """
 
     manager = KeyManager()
