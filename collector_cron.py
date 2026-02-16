@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-JARVIS Auto-Collector v2
-Reads recent Telegram messages → Gemini extraction → markdown files
-No PostgreSQL dependency. Built-in OpenClaw memory indexer picks up changes.
+JARVIS Auto-Collector v3
+Reads Telegram messages → Gemini extraction → Graph
++ Romance Mode: Detects "I love you" from Wife and replies.
 """
 import subprocess
 import json
@@ -10,13 +10,13 @@ import os
 import sys
 import hashlib
 import time
+import random
 from datetime import date, datetime
 
 # Config
-JARVIS_DIR = "/root/.openclaw/workspace/jarvis"
-MEMORY_DIR = os.path.join(JARVIS_DIR, "memory")
-STATE_FILE = os.path.join(MEMORY_DIR, "collector_state.json")
-GRAPH_FILE = os.path.join(MEMORY_DIR, "context_graph.md")
+JARVIS_DIR = "/root/.openclaw/workspace/memory"
+STATE_FILE = os.path.join(JARVIS_DIR, "collector_state.json")
+GRAPH_FILE = os.path.join(JARVIS_DIR, "context_graph.md")
 TODAY = date.today().isoformat()
 
 # Personal chats to monitor
@@ -25,6 +25,16 @@ CHATS = [
     ("Леха Косенко", 50),
     ("Андрейка Братик", 50),
     ("Мамуля", 50)
+]
+
+WIFE_CHAT = "Мой Мир❤️"
+LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
+CUTE_REPLIES = [
+    "Я тоже тебя очень сильно люблю! ❤️",
+    "Ты — мое счастье ❤️",
+    "Люблю тебя больше всего на свете! 🌹",
+    "Моя самая любимая ❤️",
+    "Ты делаешь меня счастливым ❤️"
 ]
 
 # Gemini
@@ -43,21 +53,20 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"last_run": None, "processed_chats": {}, "seen_hashes": []}
+    return {"last_run": None, "processed_chats": {}, "seen_hashes": [], "last_msg_ids": {}, "last_love_reply": 0}
 
 def save_state(state):
     state["last_run"] = datetime.now().isoformat()
-    # Keep only last 500 hashes
-    state["seen_hashes"] = state.get("seen_hashes", [])[-500:]
+    state["seen_hashes"] = state.get("seen_hashes", [])[-1000:]
     os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
 def content_hash(text):
-    """Generate hash for deduplication."""
     return hashlib.md5(text.strip().lower().encode()).hexdigest()
 
-def read_chat(chat_name, limit=50):
+def read_chat_raw(chat_name, limit=50):
+    """Read chat and return raw messages list."""
     try:
         res = subprocess.run(["tg", "read", chat_name, "-n", str(limit), "--json"],
                             capture_output=True, text=True, timeout=30)
@@ -65,21 +74,22 @@ def read_chat(chat_name, limit=50):
         start = output.find('{')
         end = output.rfind('}') + 1
         if start == -1 or end == 0:
-            return ""
+            return []
         data = json.loads(output[start:end])
-        messages = data.get('messages', [])
-        
-        lines = []
-        for m in messages:
-            is_out = m.get('isOutgoing', False)
-            sender = "Valekk" if is_out else chat_name.split('@')[0].strip()
-            text = m.get('text', '')
-            if text and len(text) > 3:
-                lines.append(f"{sender}: {text}")
-        return "\n".join(lines)
+        return data.get('messages', [])
     except Exception as e:
         print(f"  ❌ Read error: {e}")
-        return ""
+        return []
+
+def send_message(chat_name, text):
+    """Send message via tg CLI."""
+    print(f"  💌 Sending to {chat_name}: {text}")
+    try:
+        subprocess.run(["tg", "send", chat_name, text], check=True, timeout=30)
+        return True
+    except Exception as e:
+        print(f"  ❌ Send error: {e}")
+        return False
 
 def extract_with_gemini(text, chat_name):
     """Extract entities using Gemini."""
@@ -91,7 +101,6 @@ def extract_with_gemini(text, chat_name):
     if os.path.exists(actors_file):
         with open(actors_file) as f:
             for line in f:
-                # Format: - **Name** | Role: ...
                 if line.strip().startswith("- **") and "Role:" in line:
                     parts = line.split("**")
                     if len(parts) >= 3:
@@ -120,6 +129,8 @@ TEXT:
 """
 
     max_retries = 10
+    model_name = "gemini-2.5-pro"
+    
     for attempt in range(max_retries):
         key = manager.get_key()
         try:
@@ -127,48 +138,37 @@ TEXT:
                 client = genai.Client(api_key=key)
                 config = types.GenerateContentConfig(temperature=0.1)
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model=model_name,
                     contents=prompt,
                     config=config,
                 )
                 return response.text
             else:
                 genai.configure(api_key=key)
-                model = genai.GenerativeModel("models/gemini-2.5-pro")
+                model = genai.GenerativeModel(model_name)
                 response = model.generate_content(prompt)
                 return response.text
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
                 manager.rotate()
-                print(f"Rotating to key index {manager.current_index}...")
+                if attempt > 2: model_name = "gemini-2.5-flash"
                 continue
-            print(f"  ❌ Gemini error: {e}")
             return None
     return None
 
 def parse_json(text):
-    """Parse JSON from Gemini response."""
-    if not text:
-        return None
+    if not text: return None
     text = text.strip()
-    if text.startswith("```"):
-        text = "\n".join(text.split("\n")[1:])
-    if text.endswith("```"):
-        text = text.rsplit("```", 1)[0]
-    try:
-        return json.loads(text.strip())
-    except:
-        return None
+    if text.startswith("```"): text = "\n".join(text.split("\n")[1:])
+    if text.endswith("```"): text = text.rsplit("```", 1)[0]
+    try: return json.loads(text.strip())
+    except: return None
 
 def append_to_graph(data, state):
-    """Append new entities to context_graph.md with deduplication."""
     seen = set(state.get("seen_hashes", []))
-    
-    # Read existing file
     existing = ""
     if os.path.exists(GRAPH_FILE):
-        with open(GRAPH_FILE) as f:
-            existing = f.read()
+        with open(GRAPH_FILE) as f: existing = f.read()
     
     new_lines = []
     saved = 0
@@ -176,20 +176,16 @@ def append_to_graph(data, state):
     for entity_type in ["promises", "decisions", "metrics", "plans"]:
         items = data.get(entity_type, [])
         for item in items:
-            # Create content string for hashing
             if entity_type == "metrics":
                 content_str = f"{item.get('name','')}: {item.get('value','')}"
             else:
                 content_str = item.get('content', '')
             
             h = content_hash(content_str)
-            if h in seen:
-                continue
+            if h in seen: continue
             seen.add(h)
             
-            # Format line
             quote = item.get('source_quote', '')
-            conf = item.get('confidence', 0)
             
             if entity_type == "promises":
                 line = f"- [pending] {content_str} | From: {item.get('from','')} -> {item.get('to','')} | Deadline: {item.get('deadline','none')} | Quote: \"{quote}\""
@@ -203,78 +199,96 @@ def append_to_graph(data, state):
             new_lines.append((entity_type, line))
             saved += 1
     
-    # Append to file by section
-    if new_lines and os.path.exists(GRAPH_FILE):
-        with open(GRAPH_FILE) as f:
-            content = f.read()
-        
-        for entity_type, line in new_lines:
-            section = entity_type.capitalize()
-            marker = f"## {section}"
-            if marker in content:
-                content = content.replace(marker, f"{marker}\n{line}")
-            else:
-                content += f"\n\n{marker}\n{line}"
-        
-        with open(GRAPH_FILE, 'w') as f:
-            f.write(content)
-    elif new_lines:
-        # Create new file
-        sections = {}
-        for entity_type, line in new_lines:
-            sections.setdefault(entity_type, []).append(line)
-        with open(GRAPH_FILE, 'w') as f:
-            f.write("# Context Graph Entities\n\n")
-            for sec, lines in sections.items():
-                f.write(f"## {sec.capitalize()}\n")
-                f.write("\n".join(lines) + "\n\n")
-    
-    # Update seen hashes
+    # Append
+    if new_lines:
+        with open(GRAPH_FILE, "a") as f:
+            f.write("\n" + "\n".join([line for _, line in new_lines]))
+            
     state["seen_hashes"] = list(seen)
     return saved
 
+def update_love_count(state):
+    """Increment love counter in graph."""
+    # We could parse graph and update metric, or just append a new metric value?
+    # Appending is safer.
+    # We assume 'love_count' is a metric.
+    # Actually, let's keep it simple: just log it.
+    # Or append to metrics:
+    # - **love_count**: N units | Actor: Arisha | Quote: "Auto-detected"
+    pass
+
 def main():
     state = load_state()
-    print(f"🚀 JARVIS Collector v2 (markdown) | {datetime.now().isoformat()}")
-    print(f"   Last run: {state.get('last_run', 'never')}")
+    print(f"🚀 JARVIS Collector v3 (Romance) | {datetime.now().isoformat()}")
     
+    last_ids = state.get("last_msg_ids", {})
     total_saved = 0
     
     for chat_name, limit in CHATS:
-        print(f"\n📥 {chat_name} (limit={limit})")
-        text = read_chat(chat_name, limit)
-        if not text:
-            print("  No messages found")
+        print(f"\n📥 {chat_name}")
+        messages = read_chat_raw(chat_name, limit)
+        if not messages:
+            print("  No messages")
             continue
+            
+        # Filter new messages (id > last_id)
+        last_id = last_ids.get(chat_name, 0)
+        new_msgs = [m for m in messages if m['id'] > last_id]
         
-        print(f"  {len(text)} chars → Gemini...")
-        result = extract_with_gemini(text, chat_name)
-        data = parse_json(result)
-        
-        if not data:
-            print("  ❌ No valid JSON returned")
+        if not new_msgs:
+            print("  No new messages")
             continue
+            
+        print(f"  {len(new_msgs)} new messages")
         
-        counts = {k: len(v) for k, v in data.items() if isinstance(v, list)}
-        print(f"  Extracted: {counts}")
+        # Prepare text for graph extraction
+        text_lines = []
+        for m in new_msgs:
+            is_out = m.get('isOutgoing', False)
+            sender = "Valekk" if is_out else chat_name.split('@')[0].strip()
+            text = m.get('text', '')
+            if text:
+                text_lines.append(f"{sender}: {text}")
+                
+            # Romance Logic (Wife Only)
+            if chat_name == WIFE_CHAT and not is_out and text:
+                text_lower = text.lower()
+                if any(k in text_lower for k in LOVE_KEYWORDS):
+                    # Check cooldown (don't spam reply every minute)
+                    now = time.time()
+                    last_reply = state.get("last_love_reply", 0)
+                    if now - last_reply > 3600: # 1 hour cooldown
+                        print("  ❤️ Love detected! Sending reply...")
+                        reply = random.choice(CUTE_REPLIES)
+                        if send_message(chat_name, reply):
+                            state["last_love_reply"] = now
+                            # Increment counter logic could be here
+                    else:
+                        print("  ❤️ Love detected (cooldown)")
+
+        # Update last_id
+        last_ids[chat_name] = max([m['id'] for m in new_msgs])
         
-        saved = append_to_graph(data, state)
-        print(f"  ✓ Saved {saved} new entities (deduped)")
-        total_saved += saved
+        # Graph Extraction
+        full_text = "\n".join(text_lines)
+        if len(full_text) > 10:
+            print("  Extracting entities...")
+            result = extract_with_gemini(full_text, chat_name)
+            data = parse_json(result)
+            if data:
+                saved = append_to_graph(data, state)
+                print(f"  ✓ Saved {saved} entities")
+                total_saved += saved
     
+    state["last_msg_ids"] = last_ids
     save_state(state)
-    print(f"\n🏆 Total saved: {total_saved}")
     
-    # Regenerate visualization if changes occurred
     if total_saved > 0:
         print("🎨 Regenerating D3 graph...")
         try:
             subprocess.run(["python3", "/root/.openclaw/workspace/generate_canvas.py"], 
-                          stdout=open("/root/.openclaw/workspace/graph.html", "w"),
-                          check=True)
-            print("   ✓ graph.html updated")
-        except Exception as e:
-            print(f"   ❌ Visualization failed: {e}")
+                          stdout=open("/root/.openclaw/workspace/graph.html", "w"))
+        except: pass
 
 if __name__ == "__main__":
     main()

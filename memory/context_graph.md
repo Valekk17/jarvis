@@ -243,3 +243,44 @@
 - [active] составить табличку | Target: None | Quote: "Надо вообще составить наверное табличку"
 - [active] стараться (в воспитании ребенка) | Target: None | Quote: "Но блин, реально нам нужно будет стараться"
 - [active] читать всякие умные книжки (ребенку) | Target: None | Quote: "Будете всякие умные книжки читать"
+- [active] отвечать | Actor: Valekk | Target: none | Quote: "Ты должен отвечать"
+- [active] заниматься продажей изи планов питания по 200 руб | Actor: Valekk | Target: none | Quote: "продажей изи планов питания по 200 руб"
+- [active] развивать тему с блогом и тренерством | Actor: Valekk | Target: none | Quote: "но я думаю тема с блогом может выстрелить, с тренерством"
+- [active] составить план реализации | Actor: Мой Мир❤️ | Target: none | Quote: "составь план реализации"
+- [active] придумать бизнес модель | Actor: Мой Мир❤️ | Target: none | Quote: "придумай бизнес модель"
+- [active] отредактировать бизнес модель | Actor: Мой Мир❤️ | Target: none | Quote: "отредактируй"
+- [active] добавить что-то к бизнес модели | Actor: Мой Мир❤️ | Target: none | Quote: "добавь то-то"
+- [active] делать 3-5 запросов каждый день | Actor: Мой Мир❤️ | Target: none | Quote: "каждый день делай 3-5 запросов"
+- [active] выбирать модель claude opus 4.6 для конкретных задач | Actor: Мой Мир❤️ | Target: none | Quote: "выбирай модель claude opus 4.6 для конкретных задач"
+- [active] стараться для нас | Actor: Valekk | Target: none | Quote: "Я пиздец вот хочу стараться для нас"
+- [pending] call Valekk in 2 minutes | From: Леха Косенко -> Valekk | Deadline: 2026-02-16 | Quote: "2 мин"
+- be available for a call/connection at any time today | Actor: Леха Косенко | Date: 2026-02-16 | Quote: "Давай я в любое время готов сегодня"
+- not to lose weight | Actor: Леха Косенко | Date: 2026-02-16 | Quote: "Я же не сбрасываю"
+- file an appeal with Google support | Actor: Valekk | Date: 2026-02-16 | Quote: "в поддержку гугла апелляцию подал"
+- approve Valekk's appeal | Actor: Google support | Date: 2026-02-16 | Quote: "они одобрили"
+- partially restore his account | Actor: Valekk | Date: 2026-02-16 | Quote: "восстановил немного акк"
+- **PICO 4 Ultra resolution per eye**: 2160 x 2160 pixels | Actor: Valekk | Quote: "разрешение на каждый глаз 2160 х 2160"
+- **PICO 4 Ultra refresh rate**: 90 Hz | Actor: Valekk | Quote: "90 Гц"
+- **PICO 4 Ultra field of view**: 105 degrees | Actor: Valekk | Quote: "угол обзора 105 градусов"
+- **PICO 4 Ultra camera resolution**: 32 MP | Actor: Valekk | Quote: "цветная прозрачная камера 32 МП"
+- **PICO 4 Ultra old price**: 61990 ₽ | Actor: Valekk | Quote: "Старая цена — 61.990₽"
+- **PICO 4 Ultra new price**: 38728 ₽ | Actor: Valekk | Quote: "Новая цена — 38.728₽"
+- [active] call Valekk (preferably via VK, before or after lunch) | Actor: Леха Косенко | Target: none | Quote: "Звони еще
+Valekk: Звони
+Valekk: Звони
+Valekk: В вк звони
+Valekk: Может блять до обеда или после ?
+Valekk: Бля мы когда нибудь нахуй созвонимся?"
+- [active] write to Леха Косенко | Actor: Valekk | Target: none | Quote: "Пиши"
+- [active] see a photo of Леха Косенко's face | Actor: Valekk | Target: none | Quote: "еблище твое увидеть
+Valekk: давай жду фоточку"
+- [active] take a photo of himself at home | Actor: Леха Косенко | Target: none | Quote: "домой приди там сфоткайся"
+- [active] not take photos in the gym | Actor: Леха Косенко | Target: none | Quote: "в зале то не фоткайся ты ж не педик"
+- [active] engage in sports and restore physical form | Actor: Леха Косенко | Target: none | Quote: "А в зал хожу
+Леха Косенко: Восстанавливаю форму
+Леха Косенко: Я спортом занимаюсь"
+- [active] писать Андрейке Братику в ВК | Actor: Valekk | Target: none | Quote: "Пиши мне лучше ВК"
+- [active] делать телеграм бота | Actor: Valekk | Target: none | Quote: "я вот телеграм бота делаю"
+- [active] сбросить деньги ей от нас двоих | Actor: Valekk | Target: none | Quote: "А ты ей уже от нас двоих сбросишь"
+- [active] скинуть 2 (единицы денег) Valekk'у | Actor: Андрейка Братик | Target: none | Quote: "Давай я тебе тоже 2 скину"
+- [active] пойти на работу | Actor: Андрейка Братик | Target: none | Quote: "Завтра на работу уже"
