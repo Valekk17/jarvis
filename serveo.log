@@ -1,8 +1,0 @@
-Pseudo-terminal will not be allocated because stdin is not a terminal.
-Warning: Permanently added 'serveo.net' (RSA) to the list of known hosts.
-[32mForwarding HTTP traffic from https://78c74445fec90d0a-213-108-199-18.serveousercontent.com
-[0mconnect_to localhost port 8000: failed.
-connect_to localhost port 8000: failed.
-connect_to localhost port 8000: failed.
-connect_to localhost port 8000: failed.
-Connection to serveo.net closed by remote host.
