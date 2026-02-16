@@ -293,5 +293,20 @@ def main():
                           stdout=open("/root/.openclaw/workspace/graph.html", "w"))
         except: pass
 
+    git_push()
+
+def git_push():
+    """Sync to GitHub."""
+    try:
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=JARVIS_DIR, capture_output=True, text=True)
+        if status.stdout.strip():
+            subprocess.run(["git", "add", "."], cwd=JARVIS_DIR, check=True)
+            subprocess.run(["git", "commit", "-m", f"Auto-update {datetime.now().strftime('%Y-%m-%d %H:%M')}"], 
+                           cwd=JARVIS_DIR, stdout=subprocess.DEVNULL)
+        subprocess.run(["git", "push"], cwd=JARVIS_DIR, check=True)
+        print("  ☁️ Git Sync: Pushed to GitHub")
+    except Exception as e:
+        print(f"  ❌ Git Sync failed: {e}")
+
 if __name__ == "__main__":
     main()
