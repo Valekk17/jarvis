@@ -29,12 +29,14 @@ CHATS = [
 
 WIFE_CHAT = "Мой Мир❤️"
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
-CUTE_REPLIES = [
-    "Ты — мое счастье!",
-    "Ты самая лучшая жена!",
-    "Скучаю по тебе!",
-    "Ты делаешь меня счастливым!",
-    "Обнимаю крепко!"
+LOVE_REPLIES = [
+    "Я тоже тебя очень сильно люблю! ❤️ Ты — мое счастье!",
+    "И я тебя люблю безумно! ❤️ Ты самая лучшая жена!",
+    "Обожаю тебя, родная! ❤️ Скучаю по тебе!",
+    "Люблю тебя больше всего на свете! ❤️ Ты делаешь меня счастливым!",
+    "Сильно-сильно люблю тебя! ❤️ Обнимаю крепко!",
+    "И я тебя люблю, солнышко! ❤️",
+    "Я тоже тебя люблю! ❤️ Ты мой мир."
 ]
 
 # Gemini
@@ -259,10 +261,7 @@ def main():
                     last_reply = state.get("last_love_reply", 0)
                     if now - last_reply > 3600: # 1 hour cooldown
                         print("  ❤️ Love detected! Sending reply...")
-                        # Always say "I love you too" + random cute phrase
-                        base = "Я тоже тебя очень сильно люблю! ❤️"
-                        extra = random.choice(CUTE_REPLIES)
-                        reply = f"{base} {extra}"
+                        reply = random.choice(LOVE_REPLIES)
                         
                         if send_message(chat_name, reply):
                             state["last_love_reply"] = now
