@@ -117,8 +117,9 @@ RULES:
    - "I am ready" -> IGNORE (Status).
    - "We will solve it" -> IGNORE (Vague).
 3. **Specificity**: Do NOT extract tasks with missing objects ("Do it", "Solve problem", "Show").
-4. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
-5. **Relations**: Identify relationships between Actors and Entities.
+4. **Relevance**: IGNORE personal plans of others (e.g., "I'm going to gym", "I'll buy beer") unless they involve Valekk.
+5. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
+6. **Relations**: Identify relationships between Actors and Entities.
    - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk"
    - "Valekk decided to go" -> relation: "DECIDED", actor: "Valekk"
 
