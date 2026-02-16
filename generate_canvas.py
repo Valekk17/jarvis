@@ -49,39 +49,75 @@ def parse_graph():
                             links.append({"source": name, "target": target, "value": 2, "type": "relation"})
         
         elif current_section in ['promises', 'plans', 'decisions', 'metrics']:
-            # - [status] Content | ...
-            # Clean md
+            # Line format: - [status] Content | Key: Value | ...
+            # Clean start
             clean = line[2:] # remove '- '
             
-            # Extract content
+            parts = clean.split('|')
+            content_part = parts[0].strip()
+            
+            # Remove [status] from content
+            content_text = re.sub(r'^\[.*?\] ', '', content_part).replace('**', '').strip()
+            
             if current_section == 'metrics':
-                # - **Name**: Value Unit | ...
-                m = re.match(r'\*\*(.+?)\*\*: (.+?) \|', clean)
-                if m:
-                    label = f"{m.group(1)}: {m.group(2)}"
-                    nodes.append({"id": label, "group": "metric", "radius": 8})
-                    links.append({"source": "Valekk_17", "target": label, "value": 1})
+                 # Special case: **Name**: Value Unit
+                 if ':' in content_text:
+                     content_text = content_text # Keep Name: Value
+            
+            short_text = content_text[:30] + "..." if len(content_text) > 30 else content_text
+            nodes.append({"id": short_text, "group": current_section[:-1], "full": content_text, "radius": 10})
+            
+            # Parse attributes
+            attrs = {}
+            for p in parts[1:]:
+                if ':' in p:
+                    k, v = p.split(':', 1)
+                    attrs[k.strip()] = v.strip()
+            
+            # Link logic
+            # 1. Explicit From -> To
+            if 'From' in attrs and '->' in attrs['From']:
+                 # "From: A -> B" format parsing depends on how collector wrote it
+                 # Collector wrote: "From: A -> B" as ONE field?
+                 # collector code: f"From: {src} -> {tgt}"
+                 # So key is "From", value is "A -> B"
+                 # Wait, collector code: `f"... | From: {src} -> {tgt} | ..."`
+                 # So `parts` split by `|` gives `From: A -> B`.
+                 # k="From", v="A -> B".
+                 src, tgt = attrs['From'].split('->')
+                 src = src.strip()
+                 tgt = tgt.strip()
+                 # Map actor-valekk_17 to Valekk_17 if needed
+                 # For now assume names match or close enough
+                 links.append({"source": src, "target": short_text, "value": 1})
+                 # Link promise to target too?
+                 # links.append({"source": short_text, "target": tgt, "value": 1})
+            
+            # 2. Actor field
+            elif 'Actor' in attrs:
+                actor = attrs['Actor']
+                links.append({"source": actor, "target": short_text, "value": 1})
+            
+            # 3. Fallback to old hardcoded logic if no attrs found (for old entries)
             else:
-                # - [status] Content | ... OR - Content | ...
-                content_part = clean.split('|')[0].strip()
-                # Remove [status] if present
-                content_text = re.sub(r'^\[.*?\] ', '', content_part)
-                content_text = content_text.replace('**', '')
-                
-                # Truncate
-                short_text = content_text[:30] + "..." if len(content_text) > 30 else content_text
-                
-                nodes.append({"id": short_text, "group": current_section[:-1], "full": content_text, "radius": 10})
-                
-                # Try to find actor link
-                if "From: actor-owner" in line or "From: Valekk" in line:
+                if "actor-owner" in line or "Valekk" in line:
                     links.append({"source": "Valekk_17", "target": short_text, "value": 1})
-                elif "From: actor-arisha" in line:
+                elif "actor-arisha" in line or "Arisha" in line:
                     links.append({"source": "Arisha", "target": short_text, "value": 1})
-                else:
-                    # Link to owner default
-                    links.append({"source": "Valekk_17", "target": short_text, "value": 1})
 
+    # Ensure all link sources/targets exist as nodes
+    node_ids = {n['id'] for n in nodes}
+    for l in links:
+        src = l['source']
+        if src not in node_ids:
+            nodes.append({"id": src, "group": "actor", "radius": 15})
+            node_ids.add(src)
+        
+        # If target is an actor (e.g. promise target), ensure it exists too?
+        # My logic linked Source -> Task. 
+        # If I want Task -> TargetActor, I need to add that link.
+        # Currently I only added Source -> Task.
+        
     return {"nodes": nodes, "links": links}
 
 data = parse_graph()
@@ -149,12 +185,26 @@ const label = g.append("g")
     .style("font-size", "10px")
     .style("pointer-events", "none");
 
+const edgeLabel = g.append("g")
+    .selectAll("text")
+    .data(data.links)
+    .join("text")
+    .attr("dy", -5)
+    .text(d => d.type || "")
+    .attr("fill", "#666")
+    .style("font-size", "8px")
+    .style("pointer-events", "none");
+
 simulation.on("tick", () => {{
     link
         .attr("x1", d => d.source.x)
         .attr("y1", d => d.source.y)
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
+
+    edgeLabel
+        .attr("x", d => (d.source.x + d.target.x) / 2)
+        .attr("y", d => (d.source.y + d.target.y) / 2);
 
     node
         .attr("cx", d => d.x)
