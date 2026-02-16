@@ -111,10 +111,14 @@ def extract_with_gemini(text, chat_name):
     prompt = f"""You are JARVIS entity extractor. Current date: {TODAY}. Chat: {chat_name}.
 
 RULES:
-1. Anti-Noise: Ignore greetings, small talk, pure emotions.
-2. **Implicit Tasks**: If a fact implies a concrete action, extract as PLAN.
-3. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
-4. **Relations**: Identify relationships between Actors and Entities.
+1. Anti-Noise: Ignore greetings, small talk, pure emotions, and STATUS updates ("I am ready", "I am here").
+2. **Implicit Tasks**: Only if specific.
+   - "Order arrived" -> Plan: "Pick up order" (Specific).
+   - "I am ready" -> IGNORE (Status).
+   - "We will solve it" -> IGNORE (Vague).
+3. **Specificity**: Do NOT extract tasks with missing objects ("Do it", "Solve problem", "Show").
+4. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
+5. **Relations**: Identify relationships between Actors and Entities.
    - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk"
    - "Valekk decided to go" -> relation: "DECIDED", actor: "Valekk"
 
@@ -211,13 +215,20 @@ def append_to_graph(data, state):
 
 def update_love_count(state):
     """Increment love counter in graph."""
-    # We could parse graph and update metric, or just append a new metric value?
-    # Appending is safer.
-    # We assume 'love_count' is a metric.
-    # Actually, let's keep it simple: just log it.
-    # Or append to metrics:
-    # - **love_count**: N units | Actor: Arisha | Quote: "Auto-detected"
     pass
+
+def git_push():
+    """Sync to GitHub."""
+    try:
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=JARVIS_DIR, capture_output=True, text=True)
+        if status.stdout.strip():
+            subprocess.run(["git", "add", "."], cwd=JARVIS_DIR, check=True)
+            subprocess.run(["git", "commit", "-m", f"Auto-update {datetime.now().strftime('%Y-%m-%d %H:%M')}"], 
+                           cwd=JARVIS_DIR, stdout=subprocess.DEVNULL)
+        subprocess.run(["git", "push"], cwd=JARVIS_DIR, check=True)
+        print("  ☁️ Git Sync: Pushed to GitHub")
+    except Exception as e:
+        print(f"  ❌ Git Sync failed: {e}")
 
 def main():
     state = load_state()
@@ -265,7 +276,6 @@ def main():
                         
                         if send_message(chat_name, reply):
                             state["last_love_reply"] = now
-                            # Increment counter logic could be here
                     else:
                         print("  ❤️ Love detected (cooldown)")
 
@@ -294,19 +304,6 @@ def main():
         except: pass
 
     git_push()
-
-def git_push():
-    """Sync to GitHub."""
-    try:
-        status = subprocess.run(["git", "status", "--porcelain"], cwd=JARVIS_DIR, capture_output=True, text=True)
-        if status.stdout.strip():
-            subprocess.run(["git", "add", "."], cwd=JARVIS_DIR, check=True)
-            subprocess.run(["git", "commit", "-m", f"Auto-update {datetime.now().strftime('%Y-%m-%d %H:%M')}"], 
-                           cwd=JARVIS_DIR, stdout=subprocess.DEVNULL)
-        subprocess.run(["git", "push"], cwd=JARVIS_DIR, check=True)
-        print("  ☁️ Git Sync: Pushed to GitHub")
-    except Exception as e:
-        print(f"  ❌ Git Sync failed: {e}")
 
 if __name__ == "__main__":
     main()
