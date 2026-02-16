@@ -140,6 +140,14 @@ Propose:
 - or reset to pre-change
 Briefly explain consequences. Wait for user decision.
 
+### 6.5 Restart Protocol (Mandatory)
+After any restart/update, IMMEDIATELY check:
+1. `cron status` & `cron list` (ensure jobs are scheduled).
+2. `systemctl status` (external services like voice).
+3. `tunnel` (is URL active?).
+4. `session_status` (is AI alive?).
+Report status to user.
+
 ---
 
 ## 7. Hallucination Minimization
