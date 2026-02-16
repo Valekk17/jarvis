@@ -30,11 +30,11 @@ CHATS = [
 WIFE_CHAT = "Мой Мир❤️"
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
 CUTE_REPLIES = [
-    "Я тоже тебя очень сильно люблю! ❤️",
-    "Ты — мое счастье ❤️",
-    "Люблю тебя больше всего на свете! 🌹",
-    "Моя самая любимая ❤️",
-    "Ты делаешь меня счастливым ❤️"
+    "Ты — мое счастье!",
+    "Ты самая лучшая жена!",
+    "Скучаю по тебе!",
+    "Ты делаешь меня счастливым!",
+    "Обнимаю крепко!"
 ]
 
 # Gemini
@@ -259,7 +259,11 @@ def main():
                     last_reply = state.get("last_love_reply", 0)
                     if now - last_reply > 3600: # 1 hour cooldown
                         print("  ❤️ Love detected! Sending reply...")
-                        reply = random.choice(CUTE_REPLIES)
+                        # Always say "I love you too" + random cute phrase
+                        base = "Я тоже тебя очень сильно люблю! ❤️"
+                        extra = random.choice(CUTE_REPLIES)
+                        reply = f"{base} {extra}"
+                        
                         if send_message(chat_name, reply):
                             state["last_love_reply"] = now
                             # Increment counter logic could be here
