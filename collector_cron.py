@@ -366,6 +366,12 @@ def main():
             subprocess.run(["python3", "/root/.openclaw/workspace/generate_canvas.py"], 
                           stdout=open("/root/.openclaw/workspace/graph.html", "w"))
         except: pass
+        
+        # Generate User View
+        print("📝 Generating User Tasks...")
+        try:
+            subprocess.run(["python3", "/root/.openclaw/workspace/generate_user_view.py"])
+        except: pass
 
     git_push()
 
