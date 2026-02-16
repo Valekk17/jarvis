@@ -244,7 +244,10 @@ def archive_completed():
         with open(GRAPH_FILE, "w") as f:
             f.writelines(active_lines)
             
-        archive_file = os.path.join(JARVIS_DIR, "archive_tasks.md")
+        archive_dir = os.path.join(JARVIS_DIR, ".archive")
+        os.makedirs(archive_dir, exist_ok=True)
+        archive_file = os.path.join(archive_dir, "archive_tasks.md")
+        
         with open(archive_file, "a") as f:
             f.write(f"\n## Archive {datetime.now().isoformat()}\n")
             f.writelines(archive_lines)
