@@ -160,35 +160,46 @@ Return ONLY JSON. No markdown, no explanation."""
 def cmd_audio(args):
     """Transcribe audio using Gemini."""
     manager = KeyManager()
-    key = manager.get_key()
     
     # MIME type detection
     ext = os.path.splitext(args.file)[1].lower()
     mime = "audio/ogg" if ext == ".ogg" else "audio/mp3"
     
-    try:
-        if USE_NEW_API:
-            client = genai.Client(api_key=key)
-            with open(args.file, "rb") as f:
-                file_data = f.read()
-            
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    types.Content(
-                        parts=[
-                            types.Part.from_bytes(data=file_data, mime_type=mime),
-                            types.Part.from_text(text="Transcribe this audio verbatim.")
-                        ]
-                    )
-                ]
-            )
-            print(response.text)
-        else:
-            print("Legacy genai not supported for audio. Update libs.", file=sys.stderr)
-            
-    except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+    max_retries = 10
+    model_name = "gemini-2.5-flash"
+    
+    for attempt in range(max_retries):
+        key = manager.get_key()
+        try:
+            if USE_NEW_API:
+                client = genai.Client(api_key=key)
+                with open(args.file, "rb") as f:
+                    file_data = f.read()
+                
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        types.Content(
+                            parts=[
+                                types.Part.from_bytes(data=file_data, mime_type=mime),
+                                types.Part.from_text(text="Transcribe this audio verbatim.")
+                            ]
+                        )
+                    ]
+                )
+                print(response.text)
+                return
+            else:
+                print("Legacy genai not supported for audio.", file=sys.stderr)
+                return
+                
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower() or "permission_denied" in str(e).lower():
+                # print(f"Key issue. Rotating...", file=sys.stderr)
+                manager.rotate()
+                continue
+            print(f"Error: {e}", file=sys.stderr)
+            break
 
 
 def cmd_summarize(args):

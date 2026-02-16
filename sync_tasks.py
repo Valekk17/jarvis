@@ -24,19 +24,35 @@ def sync():
     existing_contents = set()
     
     task_files = get_all_task_files()
+    files_to_clean = {}
+
     for tf in task_files:
         with open(tf) as f:
             lines = f.readlines()
         
-        # Read lines to find [x] and list existing
+        kept_lines = []
+        file_changed = False
+
         for line in lines:
-            line = line.strip()
-            if line.startswith("- [x]"):
-                content = line[5:].strip()
+            line_s = line.strip()
+            if line_s.startswith("- [x]"):
+                content = line_s[5:].strip()
                 completed_contents.add(content)
-            elif line.startswith("- [ ]"):
-                content = line[5:].strip()
-                existing_contents.add(content)
+                file_changed = True
+            else:
+                if line_s.startswith("- [ ]"):
+                    content = line_s[5:].strip()
+                    existing_contents.add(content)
+                kept_lines.append(line)
+        
+        if file_changed:
+            files_to_clean[tf] = kept_lines
+
+    # Apply cleanup
+    for tf, lines in files_to_clean.items():
+        with open(tf, "w") as f:
+            f.writelines(lines)
+        print(f"Cleaned completed tasks from {os.path.basename(tf)}")
 
     # 2. Update Graph (Mark completed)
     if completed_contents:
@@ -60,7 +76,6 @@ def sync():
             print(f"Synced {updated_count} completed tasks from Obsidian")
 
     # 3. Add New Tasks (Inbox)
-    # Read graph again
     with open(GRAPH_FILE) as f: lines = f.readlines()
     
     new_tasks = []
@@ -71,10 +86,7 @@ def sync():
             status_content = parts[0].strip()
             content = re.sub(r'^\[.*?\] ', '', status_content).strip()
             
-            # If not in existing files (and not completed just now)
             if content not in existing_contents and content not in completed_contents:
-                # Add to new list
-                # Try to get actor
                 actor = ""
                 for p in parts[1:]:
                     if "Actor:" in p: actor = p.split("Actor:")[1].strip()
@@ -87,7 +99,6 @@ def sync():
                 new_tasks.append((actor, content))
 
     if new_tasks:
-        # Append to Inbox (Day.md)
         with open(INBOX_FILE, "a") as f:
             f.write(f"\n\n### New ({datetime.now().strftime('%H:%M')})\n")
             for actor, task in new_tasks:
