@@ -74,7 +74,3 @@ Refactored Markdown Graph.
 - количество сделанных ботов: 1.0 бот | Actor: Valekk_17 (ID: 00000000-0000-4000-8000-00000000000c) | Date: 2026-02-15 | Quote: "Я уже сделал вот бота" | Confidence: 1.0 | ID: 00000000-0000-4000-8000-00000000004f
 
 ## Plans
-- [completed] установить V2RayTun на телефон | Actor: Evgeniya Kovalkova (ID: 00000000-0000-4000-8000-000000000004) | Quote: "Valekk_17: Установить v2raytun" | Confidence: 1.0 | ID: 00000000-0000-4000-8000-00000000005f
-- [completed] созвониться/встретиться завтра | Actor: Alexey Kosenko (ID: 00000000-0000-4000-8000-000000000001) | Quote: "Можем завтра" | Confidence: 1.0 | ID: 00000000-0000-4000-8000-00000000009d
-- [completed] позвонить Valekk_17 в ВК | Actor: Alexey Kosenko (ID: 00000000-0000-4000-8000-000000000001) | Quote: "В вк звони" | Confidence: 1.0 | ID: 00000000-0000-4000-8000-0000000000a6
-- [completed] настроить voice_watcher.py как systemd сервис с автоперезапуском | Actor: JARVIS (ID: 00000000-0000-4000-8000-000000000007) | Quote: "voice_watcher как systemd service" | Confidence: 1.0 | ID: 00000000-0000-4000-8000-0000000000b3

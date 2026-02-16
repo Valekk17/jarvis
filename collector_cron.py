@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-JARVIS Auto-Collector v3
+JARVIS Auto-Collector v4
 Reads Telegram messages → Gemini extraction → Graph
 + Romance Mode: Detects "I love you" from Wife and replies.
++ Morning Greetings: Mom.
++ Sync: Two-way with Obsidian Tasks.
 """
 import subprocess
 import json
@@ -28,6 +30,8 @@ CHATS = [
 ]
 
 WIFE_CHAT = "Мой Мир❤️"
+MOM_CHAT = "Мамуля"
+
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
 LOVE_REPLIES = [
     "Я тоже тебя очень сильно люблю! ❤️ Ты — мое счастье!",
@@ -37,6 +41,14 @@ LOVE_REPLIES = [
     "Сильно-сильно люблю тебя! ❤️ Обнимаю крепко!",
     "И я тебя люблю, солнышко! ❤️",
     "Я тоже тебя люблю! ❤️ Ты мой мир."
+]
+
+MORNING_GREETINGS = [
+    "Доброе утро, мамуля! ❤️ Я тебя люблю!",
+    "С добрым утром! ❤️ Люблю тебя, хорошего дня!",
+    "Мамулечка, доброе утро! ❤️ Я тебя люблю!",
+    "Доброе утро! ❤️ Как настроение? Люблю!",
+    "Привет, мамуля! ❤️ Доброе утро! Люблю тебя!"
 ]
 
 # Gemini
@@ -55,7 +67,7 @@ def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE) as f:
             return json.load(f)
-    return {"last_run": None, "processed_chats": {}, "seen_hashes": [], "last_msg_ids": {}, "last_love_reply": 0}
+    return {"last_run": None, "processed_chats": {}, "seen_hashes": [], "last_msg_ids": {}, "last_love_reply": 0, "last_morning_greet_mom": ""}
 
 def save_state(state):
     state["last_run"] = datetime.now().isoformat()
@@ -253,15 +265,17 @@ def get_unique_reply(state):
 def git_push():
     """Sync to GitHub."""
     try:
-        # Pull first (to get user's checks)
-        subprocess.run(["git", "pull", "--rebase"], cwd=JARVIS_DIR, check=False) # Ignore error if no remote changes
-        
         # Check if changes exist
         status = subprocess.run(["git", "status", "--porcelain"], cwd=JARVIS_DIR, capture_output=True, text=True)
+        
+        # Commit local changes first
         if status.stdout.strip():
             subprocess.run(["git", "add", "."], cwd=JARVIS_DIR, check=True)
             subprocess.run(["git", "commit", "-m", f"Auto-update {datetime.now().strftime('%Y-%m-%d %H:%M')}"], 
                            cwd=JARVIS_DIR, stdout=subprocess.DEVNULL)
+            
+        # Pull (rebase) after commit
+        subprocess.run(["git", "pull", "--rebase"], cwd=JARVIS_DIR, check=False) 
         
         # Push
         subprocess.run(["git", "push"], cwd=JARVIS_DIR, check=True)
@@ -271,7 +285,7 @@ def git_push():
 
 def main():
     state = load_state()
-    print(f"🚀 JARVIS Collector v3 (Romance) | {datetime.now().isoformat()}")
+    print(f"🚀 JARVIS Collector v4 (Morning) | {datetime.now().isoformat()}")
     
     last_ids = state.get("last_msg_ids", {})
     total_saved = 0
@@ -288,10 +302,9 @@ def main():
         new_msgs = [m for m in messages if m['id'] > last_id]
         
         if not new_msgs:
-            print("  No new messages")
-            continue
-            
-        print(f"  {len(new_msgs)} new messages")
+            pass
+        else:
+            print(f"  {len(new_msgs)} new messages")
         
         # Prepare text for graph extraction
         text_lines = []
@@ -306,17 +319,14 @@ def main():
             if chat_name == WIFE_CHAT and not is_out and text:
                 text_lower = text.lower()
                 if any(k in text_lower for k in LOVE_KEYWORDS):
-                    # Check cooldown (don't spam reply every minute)
+                    # Check cooldown
                     now = time.time()
                     last_reply = state.get("last_love_reply", 0)
-                    if now - last_reply > 3600: # 1 hour cooldown
+                    if now - last_reply > 3600: 
                         print("  ❤️ Love detected! Sending reply...")
                         reply = get_unique_reply(state)
-                        
                         if send_message(chat_name, reply):
                             state["last_love_reply"] = now
-                    else:
-                        print("  ❤️ Love detected (cooldown)")
 
             # Find last outgoing LOVE message time
             last_out_love_ts = 0
@@ -346,19 +356,33 @@ def main():
                 if send_message(chat_name, reply):
                     state["last_love_reply"] = now
 
+        # Morning Greeting (Mom)
+        if chat_name == MOM_CHAT:
+            now_dt = datetime.now()
+            hour = now_dt.hour
+            date_str = now_dt.strftime("%Y-%m-%d")
+            last_greet = state.get("last_morning_greet_mom", "")
+            
+            if 7 <= hour < 9 and last_greet != date_str:
+                print(f"  ☀️ Morning Greeting for {chat_name}")
+                msg = random.choice(MORNING_GREETINGS)
+                if send_message(chat_name, msg):
+                    state["last_morning_greet_mom"] = date_str
+
         # Update last_id
-        last_ids[chat_name] = max([m['id'] for m in new_msgs])
-        
-        # Graph Extraction
-        full_text = "\n".join(text_lines)
-        if len(full_text) > 10:
-            print("  Extracting entities...")
-            result = extract_with_gemini(full_text, chat_name)
-            data = parse_json(result)
-            if data:
-                saved = append_to_graph(data, state)
-                print(f"  ✓ Saved {saved} entities")
-                total_saved += saved
+        if new_msgs:
+            last_ids[chat_name] = max([m['id'] for m in new_msgs])
+            
+            # Graph Extraction
+            full_text = "\n".join(text_lines)
+            if len(full_text) > 10:
+                print("  Extracting entities...")
+                result = extract_with_gemini(full_text, chat_name)
+                data = parse_json(result)
+                if data:
+                    saved = append_to_graph(data, state)
+                    print(f"  ✓ Saved {saved} entities")
+                    total_saved += saved
     
     state["last_msg_ids"] = last_ids
     save_state(state)
@@ -366,17 +390,17 @@ def main():
     # Archive completed tasks
     archived = archive_completed()
     
+    # Sync User Tasks (sync_tasks.py logic handles two-way sync)
+    print("📝 Syncing User Tasks...")
+    try:
+        subprocess.run(["python3", "/root/.openclaw/workspace/sync_tasks.py"])
+    except: pass
+
     if total_saved > 0 or archived:
         print("🎨 Regenerating D3 graph...")
         try:
             subprocess.run(["python3", "/root/.openclaw/workspace/generate_canvas.py"], 
                           stdout=open("/root/.openclaw/workspace/graph.html", "w"))
-        except: pass
-        
-        # Sync User Tasks (Tasks.md)
-        print("📝 Syncing User Tasks...")
-        try:
-            subprocess.run(["python3", "/root/.openclaw/workspace/sync_tasks.py"])
         except: pass
 
     git_push()
