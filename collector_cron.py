@@ -390,15 +390,15 @@ def main():
     state["last_msg_ids"] = last_ids
     save_state(state)
     
-    # Archive completed tasks
-    archived = archive_completed()
-    
     # Sync User Tasks (sync_tasks.py logic handles two-way sync)
     print("📝 Syncing User Tasks...")
     try:
         subprocess.run(["python3", "/root/.openclaw/workspace/sync_tasks.py"])
     except: pass
 
+    # Archive completed tasks (AFTER sync)
+    archived = archive_completed()
+    
     if total_saved > 0 or archived:
         print("🎨 Regenerating D3 graph...")
         try:
