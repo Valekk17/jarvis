@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Tasks/Month.md",
+                "file": "Tasks/Global.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Month"
+              "title": "Global"
             }
           }
         ]
@@ -112,7 +112,7 @@
         "state": {
           "type": "backlink",
           "state": {
-            "file": "Tasks/Month.md",
+            "file": "Tasks/Global.md",
             "collapseAll": false,
             "extraContext": false,
             "sortOrder": "alphabetical",
@@ -131,7 +131,7 @@
         "state": {
           "type": "outgoing-link",
           "state": {
-            "file": "Tasks/Month.md",
+            "file": "Tasks/Global.md",
             "linksCollapsed": false,
             "unlinkedCollapsed": true
           },
@@ -145,7 +145,7 @@
         "state": {
           "type": "outline",
           "state": {
-            "file": "Tasks/Month.md",
+            "file": "Tasks/Global.md",
             "followCursor": false,
             "showSearch": false,
             "searchQuery": ""
@@ -171,12 +171,16 @@
   },
   "active": "f1648251cd8965e6",
   "lastOpenFiles": [
-    "Tasks/Global.md",
     "Tasks/Day.md",
+    "Tasks/Month.md",
+    "Tasks/Global.md",
+    "/Tasks/Day.md",
+    "/Tasks/Month.md",
+    "/Tasks/Global.md",
+    "/Tasks",
     "archive_tasks.md",
     "README.md",
     "Untitled.md",
-    "Tasks/Month.md",
     "Tasks"
   ]
 }
