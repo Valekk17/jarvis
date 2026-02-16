@@ -77,25 +77,17 @@ def parse_graph():
             # Link logic
             # 1. Explicit From -> To
             if 'From' in attrs and '->' in attrs['From']:
-                 # "From: A -> B" format parsing depends on how collector wrote it
-                 # Collector wrote: "From: A -> B" as ONE field?
-                 # collector code: f"From: {src} -> {tgt}"
-                 # So key is "From", value is "A -> B"
-                 # Wait, collector code: `f"... | From: {src} -> {tgt} | ..."`
-                 # So `parts` split by `|` gives `From: A -> B`.
-                 # k="From", v="A -> B".
                  src, tgt = attrs['From'].split('->')
-                 src = src.strip()
-                 tgt = tgt.strip()
-                 # Map actor-valekk_17 to Valekk_17 if needed
-                 # For now assume names match or close enough
+                 # Clean "Name (ID: ...)" -> "Name"
+                 src = re.sub(r' \(ID: .*?\)', '', src).strip()
+                 tgt = re.sub(r' \(ID: .*?\)', '', tgt).strip()
+                 
                  links.append({"source": src, "target": short_text, "value": 1})
-                 # Link promise to target too?
-                 # links.append({"source": short_text, "target": tgt, "value": 1})
             
             # 2. Actor field
             elif 'Actor' in attrs:
                 actor = attrs['Actor']
+                actor = re.sub(r' \(ID: .*?\)', '', actor).strip()
                 links.append({"source": actor, "target": short_text, "value": 1})
             
             # 3. Fallback to old hardcoded logic if no attrs found (for old entries)
