@@ -249,6 +249,34 @@ def main():
         last_id = last_ids.get(chat_name, 0)
         new_msgs = [m for m in messages if m['id'] > last_id]
         
+        # PROACTIVE ROMANCE (Wife Only)
+        if chat_name == WIFE_CHAT:
+            now = time.time()
+            last_reply = state.get("last_love_reply", 0)
+            
+            # Find last outgoing message time
+            last_out_ts = 0
+            for m in messages:
+                if m.get('isOutgoing'):
+                    # Parse ISO "2026-02-16T01:03:30.000Z"
+                    try:
+                        dt = datetime.fromisoformat(m['date'].replace('Z', '+00:00'))
+                        ts = dt.timestamp()
+                        if ts > last_out_ts:
+                            last_out_ts = ts
+                    except: pass
+            
+            hours_since_last = (now - last_out_ts) / 3600
+            hours_since_reply = (now - last_reply) / 3600
+            current_hour = datetime.now().hour
+            
+            # If silent > 6h, daytime (9-22), and didn't auto-reply recently
+            if hours_since_last > 6 and 9 <= current_hour <= 22 and hours_since_reply > 6:
+                print(f"  ❤️ Proactive Love! Silent for {hours_since_last:.1f}h")
+                reply = random.choice(LOVE_REPLIES)
+                if send_message(chat_name, reply):
+                    state["last_love_reply"] = now
+            
         if not new_msgs:
             print("  No new messages")
             continue
