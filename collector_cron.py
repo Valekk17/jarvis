@@ -231,6 +231,15 @@ def git_push():
     except Exception as e:
         print(f"  ❌ Git Sync failed: {e}")
 
+def get_unique_reply(state):
+    """Get a love reply different from the last one."""
+    last_msg = state.get("last_love_message", "")
+    available = [m for m in LOVE_REPLIES if m != last_msg]
+    if not available: available = LOVE_REPLIES 
+    reply = random.choice(available)
+    state["last_love_message"] = reply
+    return reply
+
 def main():
     state = load_state()
     print(f"🚀 JARVIS Collector v3 (Romance) | {datetime.now().isoformat()}")
@@ -274,28 +283,26 @@ def main():
             hours_since_auto_reply = (now - last_reply) / 3600
             current_hour = datetime.now().hour
             
+def get_unique_reply(state):
+    """Get a love reply different from the last one."""
+    last_msg = state.get("last_love_message", "")
+    available = [m for m in LOVE_REPLIES if m != last_msg]
+    if not available: available = LOVE_REPLIES # Should not happen unless list length 1
+    reply = random.choice(available)
+    state["last_love_message"] = reply
+    return reply
+
+def main():
+# ...
             # If silent (no love) > 6h, daytime (9-22), and didn't auto-reply recently
             if hours_since_last_love > 6 and 9 <= current_hour <= 22 and hours_since_auto_reply > 6:
                 print(f"  ❤️ Proactive Love! Last love: {hours_since_last_love:.1f}h ago")
-                reply = random.choice(LOVE_REPLIES)
+                reply = get_unique_reply(state)
                 if send_message(chat_name, reply):
                     state["last_love_reply"] = now
-            
+
         if not new_msgs:
-            print("  No new messages")
-            continue
-            
-        print(f"  {len(new_msgs)} new messages")
-        
-        # Prepare text for graph extraction
-        text_lines = []
-        for m in new_msgs:
-            is_out = m.get('isOutgoing', False)
-            sender = "Valekk_17" if is_out else chat_name.split('@')[0].strip()
-            text = m.get('text', '')
-            if text:
-                text_lines.append(f"{sender}: {text}")
-                
+# ...
             # Romance Logic (Wife Only)
             if chat_name == WIFE_CHAT and not is_out and text:
                 text_lower = text.lower()
@@ -305,7 +312,7 @@ def main():
                     last_reply = state.get("last_love_reply", 0)
                     if now - last_reply > 3600: # 1 hour cooldown
                         print("  ❤️ Love detected! Sending reply...")
-                        reply = random.choice(LOVE_REPLIES)
+                        reply = get_unique_reply(state)
                         
                         if send_message(chat_name, reply):
                             state["last_love_reply"] = now
