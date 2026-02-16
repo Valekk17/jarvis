@@ -4,57 +4,66 @@ from datetime import datetime
 
 MEMORY_DIR = "/root/.openclaw/workspace/memory"
 GRAPH_FILE = os.path.join(MEMORY_DIR, "context_graph.md")
-TASKS_FILE = os.path.join(MEMORY_DIR, "Tasks.md")
+TASKS_DIR = os.path.join(MEMORY_DIR, "Tasks")
+INBOX_FILE = os.path.join(TASKS_DIR, "Day.md")
+
+os.makedirs(TASKS_DIR, exist_ok=True)
+
+def get_all_task_files():
+    files = []
+    for f in os.listdir(TASKS_DIR):
+        if f.endswith(".md"):
+            files.append(os.path.join(TASKS_DIR, f))
+    return files
 
 def sync():
     if not os.path.exists(GRAPH_FILE): return
 
-    # 1. Read User Changes from Tasks.md
+    # 1. Read User Changes (Completed)
     completed_contents = set()
-    if os.path.exists(TASKS_FILE):
-        with open(TASKS_FILE) as f:
-            for line in f:
-                if line.strip().startswith("- [x]"):
-                    # Extract content
-                    content = line.strip()[5:].strip() # remove "- [x] "
-                    completed_contents.add(content)
+    existing_contents = set()
     
-    # 2. Update Graph
-    if completed_contents:
-        with open(GRAPH_FILE) as f:
+    task_files = get_all_task_files()
+    for tf in task_files:
+        with open(tf) as f:
             lines = f.readlines()
         
+        # Read lines to find [x] and list existing
+        for line in lines:
+            line = line.strip()
+            if line.startswith("- [x]"):
+                content = line[5:].strip()
+                completed_contents.add(content)
+            elif line.startswith("- [ ]"):
+                content = line[5:].strip()
+                existing_contents.add(content)
+
+    # 2. Update Graph (Mark completed)
+    if completed_contents:
+        with open(GRAPH_FILE) as f: lines = f.readlines()
         new_lines = []
         updated_count = 0
         for line in lines:
-            # Check if this line matches a completed task
-            # Line format: - [active] Content | ...
             if "[active]" in line or "[pending]" in line:
-                # Extract content part
-                clean = line.strip()[2:] # remove '- '
+                clean = line.strip()[2:]
                 parts = clean.split('|')
-                content_part = parts[0].strip()
-                content = re.sub(r'^\[.*?\] ', '', content_part).strip()
+                status_content = parts[0].strip()
+                content = re.sub(r'^\[.*?\] ', '', status_content).strip()
                 
                 if content in completed_contents:
-                    # Mark as completed
                     line = line.replace("[active]", "[completed]").replace("[pending]", "[completed]")
                     updated_count += 1
-            
             new_lines.append(line)
             
         if updated_count > 0:
-            with open(GRAPH_FILE, "w") as f:
-                f.writelines(new_lines)
-            print(f"Synced {updated_count} completed tasks from Tasks.md")
+            with open(GRAPH_FILE, "w") as f: f.writelines(new_lines)
+            print(f"Synced {updated_count} completed tasks from Obsidian")
 
-    # 3. Regenerate Tasks.md (User View)
-    # Re-read graph (it might have updates from collector too)
-    with open(GRAPH_FILE) as f:
-        lines = f.readlines()
-
-    tasks_by_actor = {}
+    # 3. Add New Tasks (Inbox)
+    # Read graph again
+    with open(GRAPH_FILE) as f: lines = f.readlines()
     
+    new_tasks = []
     for line in lines:
         if "[active]" in line or "[pending]" in line:
             clean = line.strip()[2:]
@@ -62,40 +71,29 @@ def sync():
             status_content = parts[0].strip()
             content = re.sub(r'^\[.*?\] ', '', status_content).strip()
             
-            actor = "Other"
-            for p in parts[1:]:
-                if "Actor:" in p:
-                    actor = p.split("Actor:")[1].strip()
-                    actor = re.sub(r' \(ID: .*?\)', '', actor)
-                    break
-                if "From:" in p:
-                     from_part = p.split("From:")[1].strip()
-                     if "->" in from_part: actor = from_part.split("->")[0].strip()
-                     else: actor = from_part
-                     actor = re.sub(r' \(ID: .*?\)', '', actor)
-                     break
-            
-            if actor not in tasks_by_actor: tasks_by_actor[actor] = []
-            tasks_by_actor[actor].append(content)
+            # If not in existing files (and not completed just now)
+            if content not in existing_contents and content not in completed_contents:
+                # Add to new list
+                # Try to get actor
+                actor = ""
+                for p in parts[1:]:
+                    if "Actor:" in p: actor = p.split("Actor:")[1].strip()
+                    if "From:" in p: 
+                        from_p = p.split("From:")[1].strip()
+                        if "->" in from_p: actor = from_p.split("->")[0].strip()
+                        else: actor = from_p
+                
+                actor = re.sub(r' \(ID: .*?\)', '', actor)
+                new_tasks.append((actor, content))
 
-    with open(TASKS_FILE, "w") as f:
-        f.write(f"# 📋 Active Tasks\n*Updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}*\n\n")
-        actors = sorted(tasks_by_actor.keys())
-        if "Valekk_17" in actors:
-            actors.remove("Valekk_17")
-            actors.insert(0, "Valekk_17")
-        
-        for actor in actors:
-            name = actor
-            if name == "Valekk_17": name = "Me (Valekk)"
-            if name == "Evgeniya Kovalkova": name = "Mom"
-            if name == "Andrey Kovalkov": name = "Brother"
-            if name == "Alexey Kosenko": name = "Leha"
-            
-            f.write(f"## {name}\n")
-            for task in tasks_by_actor[actor]:
-                f.write(f"- [ ] {task}\n")
-            f.write("\n")
+    if new_tasks:
+        # Append to Inbox (Day.md)
+        with open(INBOX_FILE, "a") as f:
+            f.write(f"\n\n### New ({datetime.now().strftime('%H:%M')})\n")
+            for actor, task in new_tasks:
+                prefix = f"**{actor}**: " if actor and actor != "Valekk_17" else ""
+                f.write(f"- [ ] {prefix}{task}\n")
+        print(f"Added {len(new_tasks)} new tasks to {INBOX_FILE}")
 
 if __name__ == "__main__":
     sync()
