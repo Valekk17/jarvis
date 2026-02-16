@@ -112,12 +112,41 @@ def parse_graph():
         if src not in node_ids:
             nodes.append({"id": src, "group": "actor", "radius": 15})
             node_ids.add(src)
-        
-        # If target is an actor (e.g. promise target), ensure it exists too?
-        # My logic linked Source -> Task. 
-        # If I want Task -> TargetActor, I need to add that link.
-        # Currently I only added Source -> Task.
-        
+        tgt = l['target']
+        if tgt not in node_ids:
+             # Should be rare as target is usually the node we just created
+             pass
+
+    # ORPHAN CONTROL: Link everything to Valekk_17 if not linked
+    linked_nodes = set()
+    for l in links:
+        linked_nodes.add(l['source'])
+        linked_nodes.add(l['target'])
+    
+    for n in nodes:
+        if n['id'] != "Valekk_17" and n['id'] not in linked_nodes:
+            # Default link
+            links.append({"source": "Valekk_17", "target": n['id'], "value": 1, "type": "owns"})
+
+    # Hardcoded Family Links (Ensure existence)
+    # Family Node
+    if not any(n['id'] == "Family" for n in nodes):
+        nodes.append({"id": "Family", "group": "actor", "radius": 15})
+    
+    links.append({"source": "Family", "target": "Valekk_17", "value": 3, "type": "member"})
+    links.append({"source": "Family", "target": "Arisha", "value": 3, "type": "member"})
+
+    # Valekk <-> Arisha
+    links.append({"source": "Valekk_17", "target": "Arisha", "value": 5, "type": "spouse"})
+    # Valekk <-> Andrey
+    links.append({"source": "Valekk_17", "target": "Andrey Kovalkov", "value": 3, "type": "brother"})
+    # Valekk <-> Evgeniya
+    links.append({"source": "Valekk_17", "target": "Evgeniya Kovalkova", "value": 3, "type": "mother"})
+    # Valekk <-> Alexey
+    links.append({"source": "Valekk_17", "target": "Alexey Kosenko", "value": 3, "type": "friend"})
+    # Valekk <-> JARVIS
+    links.append({"source": "Valekk_17", "target": "JARVIS", "value": 3, "type": "assistant"})
+
     return {"nodes": nodes, "links": links}
 
 data = parse_graph()

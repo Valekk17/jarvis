@@ -118,9 +118,10 @@ RULES:
    - "We will solve it" -> IGNORE (Vague).
 3. **Specificity**: Do NOT extract tasks with missing objects ("Do it", "Solve problem", "Show").
 4. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
-5. **Relations**: Identify relationships between Actors and Entities.
-   - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk"
-   - "Valekk decided to go" -> relation: "DECIDED", actor: "Valekk"
+5. **Relations & Actors**:
+   - Individual: "I will buy" -> Actor: "Valekk_17"
+   - Shared: "We need to buy" -> Actor: "Family"
+   - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk_17"
 
 OUTPUT JSON:
 {{
@@ -258,7 +259,7 @@ def main():
         text_lines = []
         for m in new_msgs:
             is_out = m.get('isOutgoing', False)
-            sender = "Valekk" if is_out else chat_name.split('@')[0].strip()
+            sender = "Valekk_17" if is_out else chat_name.split('@')[0].strip()
             text = m.get('text', '')
             if text:
                 text_lines.append(f"{sender}: {text}")
