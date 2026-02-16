@@ -118,10 +118,9 @@ RULES:
    - "We will solve it" -> IGNORE (Vague).
 3. **Specificity**: Do NOT extract tasks with missing objects ("Do it", "Solve problem", "Show").
 4. **Principles vs Tasks**: Concrete -> PLAN, Abstract -> DECISION.
-5. **Relations & Actors**:
-   - Individual: "I will buy" -> Actor: "Valekk_17"
-   - Shared: "We need to buy" -> Actor: "Family"
-   - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk_17"
+5. **Relations**: Identify relationships between Actors and Entities.
+   - "Arisha promised Valekk" -> relation: "PROMISED", target: "Valekk"
+   - "Valekk decided to go" -> relation: "DECIDED", actor: "Valekk"
 
 OUTPUT JSON:
 {{
@@ -214,9 +213,41 @@ def append_to_graph(data, state):
     state["seen_hashes"] = list(seen)
     return saved
 
-def update_love_count(state):
-    """Increment love counter in graph."""
-    pass
+def archive_completed():
+    """Move completed tasks to archive."""
+    if not os.path.exists(GRAPH_FILE): return False
+    with open(GRAPH_FILE) as f: lines = f.readlines()
+    
+    active_lines = []
+    archive_lines = []
+    
+    for line in lines:
+        if "- [completed]" in line or "- [done]" in line:
+            archive_lines.append(line)
+        else:
+            active_lines.append(line)
+            
+    if archive_lines:
+        with open(GRAPH_FILE, "w") as f:
+            f.writelines(active_lines)
+            
+        archive_file = os.path.join(JARVIS_DIR, "archive_tasks.md")
+        with open(archive_file, "a") as f:
+            f.write(f"\n## Archive {datetime.now().isoformat()}\n")
+            f.writelines(archive_lines)
+            
+        print(f"  📦 Archived {len(archive_lines)} completed tasks")
+        return True
+    return False
+
+def get_unique_reply(state):
+    """Get a love reply different from the last one."""
+    last_msg = state.get("last_love_message", "")
+    available = [m for m in LOVE_REPLIES if m != last_msg]
+    if not available: available = LOVE_REPLIES 
+    reply = random.choice(available)
+    state["last_love_message"] = reply
+    return reply
 
 def git_push():
     """Sync to GitHub."""
@@ -230,15 +261,6 @@ def git_push():
         print("  ☁️ Git Sync: Pushed to GitHub")
     except Exception as e:
         print(f"  ❌ Git Sync failed: {e}")
-
-def get_unique_reply(state):
-    """Get a love reply different from the last one."""
-    last_msg = state.get("last_love_message", "")
-    available = [m for m in LOVE_REPLIES if m != last_msg]
-    if not available: available = LOVE_REPLIES 
-    reply = random.choice(available)
-    state["last_love_message"] = reply
-    return reply
 
 def main():
     state = load_state()
@@ -258,51 +280,21 @@ def main():
         last_id = last_ids.get(chat_name, 0)
         new_msgs = [m for m in messages if m['id'] > last_id]
         
-        # PROACTIVE ROMANCE (Wife Only)
-        if chat_name == WIFE_CHAT:
-            now = time.time()
-            last_reply = state.get("last_love_reply", 0)
-            
-            # Find last outgoing LOVE message time
-            last_out_love_ts = 0
-            for m in messages:
-                if m.get('isOutgoing'):
-                    text_out = m.get('text', '').lower()
-                    if any(k in text_out for k in LOVE_KEYWORDS):
-                        try:
-                            dt = datetime.fromisoformat(m['date'].replace('Z', '+00:00'))
-                            ts = dt.timestamp()
-                            if ts > last_out_love_ts:
-                                last_out_love_ts = ts
-                        except: pass
-            
-            # Fallback: if no love found in last 50 msgs, treat as "long ago" (0)
-            # But we also check state['last_love_reply'] which tracks *our* auto-replies
-            
-            hours_since_last_love = (now - last_out_love_ts) / 3600
-            hours_since_auto_reply = (now - last_reply) / 3600
-            current_hour = datetime.now().hour
-            
-def get_unique_reply(state):
-    """Get a love reply different from the last one."""
-    last_msg = state.get("last_love_message", "")
-    available = [m for m in LOVE_REPLIES if m != last_msg]
-    if not available: available = LOVE_REPLIES # Should not happen unless list length 1
-    reply = random.choice(available)
-    state["last_love_message"] = reply
-    return reply
-
-def main():
-# ...
-            # If silent (no love) > 6h, daytime (9-22), and didn't auto-reply recently
-            if hours_since_last_love > 6 and 9 <= current_hour <= 22 and hours_since_auto_reply > 6:
-                print(f"  ❤️ Proactive Love! Last love: {hours_since_last_love:.1f}h ago")
-                reply = get_unique_reply(state)
-                if send_message(chat_name, reply):
-                    state["last_love_reply"] = now
-
         if not new_msgs:
-# ...
+            print("  No new messages")
+            continue
+            
+        print(f"  {len(new_msgs)} new messages")
+        
+        # Prepare text for graph extraction
+        text_lines = []
+        for m in new_msgs:
+            is_out = m.get('isOutgoing', False)
+            sender = "Valekk_17" if is_out else chat_name.split('@')[0].strip()
+            text = m.get('text', '')
+            if text:
+                text_lines.append(f"{sender}: {text}")
+                
             # Romance Logic (Wife Only)
             if chat_name == WIFE_CHAT and not is_out and text:
                 text_lower = text.lower()
@@ -318,6 +310,34 @@ def main():
                             state["last_love_reply"] = now
                     else:
                         print("  ❤️ Love detected (cooldown)")
+
+            # Find last outgoing LOVE message time
+            last_out_love_ts = 0
+            for m in messages:
+                if m.get('isOutgoing'):
+                    text_out = m.get('text', '').lower()
+                    if any(k in text_out for k in LOVE_KEYWORDS):
+                        try:
+                            dt = datetime.fromisoformat(m['date'].replace('Z', '+00:00'))
+                            ts = dt.timestamp()
+                            if ts > last_out_love_ts:
+                                last_out_love_ts = ts
+                        except: pass
+            
+            # Fallback
+            now = time.time()
+            last_reply = state.get("last_love_reply", 0)
+            
+            hours_since_last_love = (now - last_out_love_ts) / 3600
+            hours_since_auto_reply = (now - last_reply) / 3600
+            current_hour = datetime.now().hour
+            
+            # If silent (no love) > 6h, daytime (9-22), and didn't auto-reply recently
+            if hours_since_last_love > 6 and 9 <= current_hour <= 22 and hours_since_auto_reply > 6:
+                print(f"  ❤️ Proactive Love! Last love: {hours_since_last_love:.1f}h ago")
+                reply = get_unique_reply(state)
+                if send_message(chat_name, reply):
+                    state["last_love_reply"] = now
 
         # Update last_id
         last_ids[chat_name] = max([m['id'] for m in new_msgs])
@@ -336,7 +356,10 @@ def main():
     state["last_msg_ids"] = last_ids
     save_state(state)
     
-    if total_saved > 0:
+    # Archive completed tasks
+    archived = archive_completed()
+    
+    if total_saved > 0 or archived:
         print("🎨 Regenerating D3 graph...")
         try:
             subprocess.run(["python3", "/root/.openclaw/workspace/generate_canvas.py"], 
