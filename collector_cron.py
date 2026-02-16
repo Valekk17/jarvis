@@ -253,11 +253,17 @@ def get_unique_reply(state):
 def git_push():
     """Sync to GitHub."""
     try:
+        # Pull first (to get user's checks)
+        subprocess.run(["git", "pull", "--rebase"], cwd=JARVIS_DIR, check=False) # Ignore error if no remote changes
+        
+        # Check if changes exist
         status = subprocess.run(["git", "status", "--porcelain"], cwd=JARVIS_DIR, capture_output=True, text=True)
         if status.stdout.strip():
             subprocess.run(["git", "add", "."], cwd=JARVIS_DIR, check=True)
             subprocess.run(["git", "commit", "-m", f"Auto-update {datetime.now().strftime('%Y-%m-%d %H:%M')}"], 
                            cwd=JARVIS_DIR, stdout=subprocess.DEVNULL)
+        
+        # Push
         subprocess.run(["git", "push"], cwd=JARVIS_DIR, check=True)
         print("  ☁️ Git Sync: Pushed to GitHub")
     except Exception as e:
@@ -367,10 +373,10 @@ def main():
                           stdout=open("/root/.openclaw/workspace/graph.html", "w"))
         except: pass
         
-        # Generate User View
-        print("📝 Generating User Tasks...")
+        # Sync User Tasks (Tasks.md)
+        print("📝 Syncing User Tasks...")
         try:
-            subprocess.run(["python3", "/root/.openclaw/workspace/generate_user_view.py"])
+            subprocess.run(["python3", "/root/.openclaw/workspace/sync_tasks.py"])
         except: pass
 
     git_push()
