@@ -22,3 +22,11 @@ Refactored Markdown Graph.
 ## Plans
 - **pregnancy_start_date**: 2025-11-09 | Actor: Arisha (ID: ...03) | Quote: "User set 100 days on 2026-02-17" | Confidence: 1.0
 - [active] настроить VPN на сервере | From: Alexey Kosenko -> Valekk_17 | Quote: "User request"
+
+## Decisions
+- Главное любить и разговаривать | Actor: Family | Type: Principle
+- Адекватно общаться | Actor: Family | Type: Principle
+- На зло не нужно злом отвечать | Actor: Family | Type: Principle
+- Avoid fluff, be direct. | Actor: Valekk_17 | Type: Principle
+- Token Economy: Efficiency first. | Actor: Valekk_17 | Type: Principle
+- System: Local-first, Markdown-based. | Actor: Valekk_17 | Type: Principle
