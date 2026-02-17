@@ -30,3 +30,4 @@ Refactored Markdown Graph.
 - Avoid fluff, be direct. | Actor: Valekk_17 | Type: Principle
 - Token Economy: Efficiency first. | Actor: Valekk_17 | Type: Principle
 - System: Local-first, Markdown-based. | Actor: Valekk_17 | Type: Principle
+- [active] Найти пауэрбанк дома | Actor: Arisha | Target: 2026-02-18 | Quote: "Voice command"
