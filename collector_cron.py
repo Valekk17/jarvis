@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-JARVIS Auto-Collector v4.1
+JARVIS Auto-Collector v4.2
 Reads Telegram messages → Gemini extraction → Graph
-+ Romance Mode
-+ Morning Greetings
-+ Sync
-+ Live Dashboard (via API)
-+ Smart Notifications (Deadlines)
++ Romance Mode: 4h interval, Verification.
++ Morning Greetings: Mom.
++ Sync: Two-way with Obsidian Tasks.
++ Live Dashboard: Pregnancy Calc, Deadlines.
 """
 import subprocess
 import json
@@ -15,7 +14,7 @@ import sys
 import hashlib
 import time
 import random
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 # Config
 JARVIS_DIR = "/root/.openclaw/workspace/memory"
@@ -39,13 +38,12 @@ MOM_CHAT = "Мамуля"
 
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
 LOVE_REPLIES = [
-    "Я тоже тебя очень сильно люблю! ❤️ Ты — мое счастье!",
-    "И я тебя люблю безумно! ❤️ Ты самая лучшая жена!",
-    "Обожаю тебя, родная! ❤️ Скучаю по тебе!",
-    "Люблю тебя больше всего на свете! ❤️ Ты делаешь меня счастливым!",
-    "Сильно-сильно люблю тебя! ❤️ Обнимаю крепко!",
-    "И я тебя люблю, солнышко! ❤️",
-    "Я тоже тебя люблю! ❤️ Ты мой мир."
+    "Я тебя люблю ❤️",
+    "Я тебя очень люблю ❤️",
+    "А я тебя люблю очень сильно ❤️",
+    "Знаешь что, я тебя очень люблю ❤️",
+    "И я тебя люблю ❤️",
+    "Я тебя люблю ❤️❤️❤️"
 ]
 
 MORNING_GREETINGS = [
@@ -109,9 +107,7 @@ def send_message(chat_name, text):
         return False
 
 def update_dashboard():
-    """Update pinned dashboard message via API."""
     try:
-        # Read Tasks
         tasks = []
         day_file = os.path.join(JARVIS_DIR, "Tasks/Day.md")
         if os.path.exists(day_file):
@@ -120,13 +116,11 @@ def update_dashboard():
                     if line.strip().startswith("- [ ]"):
                         tasks.append(line.strip()[5:].strip())
         
-        # Read Metrics
         metrics = []
         if os.path.exists(GRAPH_FILE):
             with open(GRAPH_FILE) as f:
                 for line in f:
                     if "**pregnancy_start_date**" in line:
-                        # Calc days
                         try:
                             val = line.split("**:")[1].split("|")[0].strip()
                             start_date = datetime.strptime(val, "%Y-%m-%d").date()
@@ -138,24 +132,16 @@ def update_dashboard():
                     elif "**Pregnancy**" in line: 
                          metrics.append(line.split("|")[0].strip().replace("- ", ""))
                          
-        # Compose Text
         text = f"📊 **JARVIS Live Dashboard**\n━━━━━━━━━━━━━━━━━━\n\n📅 **Сегодня ({datetime.now().strftime('%d.%m')}):**\n"
         if tasks:
-            for t in tasks[:5]:
-                text += f"▫️ {t}\n"
-            if len(tasks) > 5:
-                text += f"... и еще {len(tasks)-5}\n"
-        else:
-            text += "✅ Задач нет\n"
-            
+            for t in tasks[:5]: text += f"▫️ {t}\n"
+            if len(tasks) > 5: text += f"... и еще {len(tasks)-5}\n"
+        else: text += "✅ Задач нет\n"
         if metrics:
             text += "\n📈 **Метрики:**\n"
-            for m in metrics:
-                text += f"▫️ {m}\n"
-        
+            for m in metrics: text += f"▫️ {m}\n"
         text += f"\n🔄 *Обновлено: {datetime.now().strftime('%H:%M')}*"
         
-        # Call API
         payload = {
             "tool": "message",
             "action": "edit",
@@ -165,7 +151,6 @@ def update_dashboard():
                 "message": text
             }
         }
-        
         subprocess.run([
             "curl", "-s", "-X", "POST",
             "-H", f"Authorization: Bearer {API_TOKEN}",
@@ -174,7 +159,6 @@ def update_dashboard():
             "http://127.0.0.1:18789/tools/invoke"
         ], stdout=subprocess.DEVNULL)
         print("  📊 Dashboard updated")
-
     except Exception as e:
         print(f"Dashboard update failed: {e}")
 
@@ -234,10 +218,7 @@ TEXT: "{text[:6000]}"
                 response = client.models.generate_content(model=model_name, contents=prompt, config=config)
                 return response.text
             else:
-                genai.configure(api_key=key)
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(prompt)
-                return response.text
+                return "{}"
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
                 manager.rotate()
@@ -320,7 +301,7 @@ def git_push():
 
 def main():
     state = load_state()
-    print(f"🚀 JARVIS Collector v4.1 | {datetime.now().isoformat()}")
+    print(f"🚀 JARVIS Collector v4.2 | {datetime.now().isoformat()}")
     last_ids = state.get("last_msg_ids", {})
     total_saved = 0
     for chat_name, limit in CHATS:
@@ -343,10 +324,47 @@ def main():
                 if any(k in text_lower for k in LOVE_KEYWORDS):
                     now = time.time()
                     last_reply = state.get("last_love_reply", 0)
-                    if now - last_reply > 3600:
-                        print("  ❤️ Love detected!")
-                        reply = get_unique_reply(state)
-                        if send_message(chat_name, reply): state["last_love_reply"] = now
+                    last_out_love_ts = 0
+                    # Find last manual outgoing
+                    for hm in messages: # Check history
+                         if hm.get('isOutgoing') and any(k in hm.get('text','').lower() for k in LOVE_KEYWORDS):
+                            try:
+                                dt = datetime.fromisoformat(hm['date'].replace('Z', '+00:00'))
+                                if dt.timestamp() > last_out_love_ts: last_out_love_ts = dt.timestamp()
+                            except: pass
+                    
+                    hours_since_last = (now - last_out_love_ts) / 3600
+                    if now - last_reply > 3600: # 1h reply cooldown
+                         print("  ❤️ Love detected! Reply sent.")
+                         reply = get_unique_reply(state)
+                         if send_message(chat_name, reply): state["last_love_reply"] = now
+            
+            # Check Proactive
+            if chat_name == WIFE_CHAT:
+                 now = time.time()
+                 last_reply = state.get("last_love_reply", 0)
+                 last_out_love_ts = 0
+                 for hm in messages:
+                      if hm.get('isOutgoing') and any(k in hm.get('text','').lower() for k in LOVE_KEYWORDS):
+                         try:
+                             dt = datetime.fromisoformat(hm['date'].replace('Z', '+00:00'))
+                             if dt.timestamp() > last_out_love_ts: last_out_love_ts = dt.timestamp()
+                         except: pass
+                 hours_since_last = (now - last_out_love_ts) / 3600
+                 current_hour = datetime.now().hour
+                 
+                 # 4h interval, daytime, and no recent auto-reply
+                 if hours_since_last > 4 and 9 <= current_hour <= 22 and (now - last_reply)/3600 > 4:
+                     print(f"  ❤️ Proactive Love! Silent {hours_since_last:.1f}h")
+                     reply = get_unique_reply(state)
+                     if send_message(chat_name, reply):
+                         # Verify
+                         time.sleep(5)
+                         chk = read_chat_raw(chat_name, 5)
+                         if any(cm.get('isOutgoing') and cm.get('text')==reply for cm in chk):
+                             print("  ✅ Verified")
+                             state["last_love_reply"] = now
+                         else: print("  ❌ Verification failed")
 
         if chat_name == MOM_CHAT:
             now_dt = datetime.now()
@@ -378,7 +396,7 @@ def main():
     
     archived = archive_completed()
     check_deadlines(state)
-    update_dashboard() # Update pinned msg
+    update_dashboard()
     
     if total_saved > 0 or archived:
         print("🎨 Regenerating D3 graph...")
