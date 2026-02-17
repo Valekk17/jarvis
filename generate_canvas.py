@@ -64,8 +64,11 @@ def parse_graph():
                  if ':' in content_text:
                      content_text = content_text # Keep Name: Value
             
-            short_text = content_text[:30] + "..." if len(content_text) > 30 else content_text
-            nodes.append({"id": short_text, "group": current_section[:-1], "full": content_text, "radius": 10})
+            # Clean content for display (strip metadata from full text)
+            display_text = content_text.split('|')[0].strip()
+            short_text = display_text[:30] + "..." if len(display_text) > 30 else display_text
+            
+            nodes.append({"id": short_text, "group": current_section[:-1], "full": display_text, "radius": 10})
             
             # Parse attributes
             attrs = {}
