@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "System_Architecture.md",
+                "file": "Tasks/Day.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "System_Architecture"
+              "title": "Day"
             }
           }
         ]
@@ -112,7 +112,7 @@
         "state": {
           "type": "backlink",
           "state": {
-            "file": "System_Architecture.md",
+            "file": "Tasks/Day.md",
             "collapseAll": false,
             "extraContext": false,
             "sortOrder": "alphabetical",
@@ -166,20 +166,25 @@
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
       "bases:Create new base": false,
-      "obsidian-git:Open Git source control": false
+      "obsidian-git:Open Git source control": false,
+      "obsidian-excalidraw-plugin:New drawing": false
     }
   },
   "active": "f1648251cd8965e6",
   "lastOpenFiles": [
-    "Tasks/Day.md",
     "System_Architecture.md",
+    "obsid.md",
+    "/obsid.md",
+    "obsid",
+    "/obsid",
+    "/Tasks/Month.md",
+    "/Tasks",
+    "Tasks/Day.md",
     "/System_Architecture.md",
     "Tasks/Global.md",
     "Tasks/Month.md",
     "/Tasks/Day.md",
-    "/Tasks/Month.md",
     "/Tasks/Global.md",
-    "/Tasks",
     "archive_tasks.md",
     "README.md",
     "Untitled.md",
