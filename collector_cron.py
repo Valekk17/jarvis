@@ -256,6 +256,46 @@ def archive_completed():
         return True
     return False
 
+def check_deadlines(state):
+    """Check deadlines and notify."""
+    if not os.path.exists(GRAPH_FILE): return
+    
+    with open(GRAPH_FILE) as f: lines = f.readlines()
+    
+    notified = set(state.get("notified_tasks", []))
+    new_notified = set()
+    today_str = date.today().isoformat()
+    
+    for line in lines:
+        if "[active]" in line and "Target:" in line:
+            # Parse Target
+            # ... | Target: 2026-02-16 | ...
+            try:
+                target_part = line.split("Target:")[1].split("|")[0].strip()
+                # Check if date
+                if len(target_part) == 10:
+                    task_content = re.sub(r'- \[(active|pending)\] ', '', line.split('|')[0]).strip()
+                    task_hash = content_hash(task_content)
+                    
+                    if task_hash in notified:
+                        new_notified.add(task_hash) # Keep tracking
+                        continue
+                        
+                    # Check urgency
+                    if target_part == today_str:
+                        send_message(WIFE_CHAT, f"🔔 **Дедлайн сегодня:**\n{task_content}") # Send to wife? Or Valekk?
+                        # Valekk is 1700...
+                        # Script uses CHATS list. 'WIFE_CHAT' is defined.
+                        # How to send to Valekk (Self)?
+                        # "Valekk" userbot cannot send to "Valekk".
+                        # But "Valekk" can send to "Saved Messages" ("me" or "self").
+                        # I'll try sending to "me".
+                        subprocess.run(["tg", "send", "me", f"🔔 **Дедлайн сегодня:**\n{task_content}"])
+                        new_notified.add(task_hash)
+            except: pass
+            
+    state["notified_tasks"] = list(new_notified)
+
 def get_unique_reply(state):
     """Get a love reply different from the last one."""
     last_msg = state.get("last_love_message", "")
@@ -405,6 +445,10 @@ def main():
             subprocess.run(["python3", "/root/.openclaw/workspace/generate_canvas.py"], 
                           stdout=open("/root/.openclaw/workspace/graph.html", "w"))
         except: pass
+    
+    # Smart Notifications
+    check_deadlines(state)
+    save_state(state) # Save notification state
 
     git_push()
 
