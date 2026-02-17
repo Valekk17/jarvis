@@ -142,6 +142,11 @@ def parse_graph():
     # Valekk <-> JARVIS
     links.append({"source": "Valekk_17", "target": "JARVIS", "value": 3, "type": "assistant"})
 
+    # Link Pregnancy to Family
+    for n in nodes:
+        if "pregnancy" in n['id'].lower() or "беременность" in n['id'].lower():
+            links.append({"source": "Family", "target": n['id'], "value": 2, "type": "shared"})
+
     return {"nodes": nodes, "links": links}
 
 data = parse_graph()
