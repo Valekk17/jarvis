@@ -193,7 +193,7 @@ const link = g.append("g")
         .data(data.nodes)
         .join("circle")
         .attr("r", d => d.radius)
-        .attr("fill", d => d.id === "Arisha" ? "#ff0000" : (d.id === "Family" ? "#ff00ff" : color(d.group)))
+        .attr("fill", d => d.id === "Arisha" ? "#ff4444" : (d.id === "Family" ? "#ff4444" : color(d.group)))
         .call(drag(simulation));
 
 node.append("title").text(d => d.full || d.id);
