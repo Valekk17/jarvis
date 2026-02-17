@@ -183,15 +183,15 @@ const link = g.append("g")
     .data(data.links)
     .join("line");
 
-const node = g.append("g")
-    .attr("stroke", "#fff")
-    .attr("stroke-width", 1.5)
-    .selectAll("circle")
-    .data(data.nodes)
-    .join("circle")
-    .attr("r", d => d.radius)
-    .attr("fill", d => color(d.group))
-    .call(drag(simulation));
+    const node = g.append("g")
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1.5)
+        .selectAll("circle")
+        .data(data.nodes)
+        .join("circle")
+        .attr("r", d => d.radius)
+        .attr("fill", d => d.id === "Arisha" ? "#ff0000" : (d.id === "Family" ? "#ff00ff" : color(d.group)))
+        .call(drag(simulation));
 
 node.append("title").text(d => d.full || d.id);
 
