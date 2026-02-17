@@ -6,6 +6,7 @@ Reads Telegram messages → Gemini extraction → Graph
 + Morning Greetings
 + Sync
 + Live Dashboard (via API)
++ Smart Notifications (Deadlines)
 """
 import subprocess
 import json
@@ -38,12 +39,13 @@ MOM_CHAT = "Мамуля"
 
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
 LOVE_REPLIES = [
-    "Я тебя люблю ❤️",
-    "Я тебя очень люблю ❤️",
-    "А я тебя люблю очень сильно ❤️",
-    "Знаешь что, я тебя очень люблю ❤️",
-    "И я тебя люблю ❤️",
-    "Я тебя люблю ❤️❤️❤️"
+    "Я тоже тебя очень сильно люблю! ❤️ Ты — мое счастье!",
+    "И я тебя люблю безумно! ❤️ Ты самая лучшая жена!",
+    "Обожаю тебя, родная! ❤️ Скучаю по тебе!",
+    "Люблю тебя больше всего на свете! ❤️ Ты делаешь меня счастливым!",
+    "Сильно-сильно люблю тебя! ❤️ Обнимаю крепко!",
+    "И я тебя люблю, солнышко! ❤️",
+    "Я тоже тебя люблю! ❤️ Ты мой мир."
 ]
 
 MORNING_GREETINGS = [
@@ -132,13 +134,8 @@ def update_dashboard():
                             weeks = days // 7
                             days_rem = days % 7
                             metrics.append(f"Беременность: {days} дн. ({weeks} нед. {days_rem} дн.)")
-                            
-                            # Calc due date (approx 40 weeks = 280 days)
-                            # due_date = start_date + timedelta(days=280)
-                            # days_left = 280 - days
-                            # metrics.append(f"До родов: ~{days_left} дн.")
                         except: pass
-                    elif "**Pregnancy**" in line: # Fallback
+                    elif "**Pregnancy**" in line: 
                          metrics.append(line.split("|")[0].strip().replace("- ", ""))
                          
         # Compose Text
@@ -182,7 +179,6 @@ def update_dashboard():
         print(f"Dashboard update failed: {e}")
 
 def check_deadlines(state):
-    # (Simplified for brevity, assuming logic is same)
     if not os.path.exists(GRAPH_FILE): return
     with open(GRAPH_FILE) as f: lines = f.readlines()
     notified = set(state.get("notified_tasks", []))
@@ -238,7 +234,10 @@ TEXT: "{text[:6000]}"
                 response = client.models.generate_content(model=model_name, contents=prompt, config=config)
                 return response.text
             else:
-                return "{}"
+                genai.configure(api_key=key)
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(prompt)
+                return response.text
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
                 manager.rotate()
