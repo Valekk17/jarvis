@@ -168,21 +168,53 @@ def check_deadlines(state):
     notified = set(state.get("notified_tasks", []))
     new_notified = set()
     today_str = date.today().isoformat()
-    for line in lines:
+    
+    tasks_to_complete = []
+    
+    for i, line in enumerate(lines):
         if "[active]" in line and "Target:" in line:
             try:
                 target_part = line.split("Target:")[1].split("|")[0].strip()
                 if len(target_part) == 10:
                     task_content = line.split("|")[0].replace("- [active]", "").strip()
                     task_hash = content_hash(task_content)
+                    
                     if task_hash in notified:
                         new_notified.add(task_hash)
                         continue
+                        
                     if target_part == today_str:
-                        subprocess.run(["tg", "send", "me", f"🔔 **Дедлайн сегодня:**\n{task_content}"])
-                        new_notified.add(task_hash)
+                        # Determine recipient
+                        recipient = "me"
+                        if "Actor: Arisha" in line or "Arisha" in line: recipient = WIFE_CHAT
+                        elif "Actor: Evgeniya" in line or "Мамуля" in line: recipient = MOM_CHAT
+                        
+                        msg = f"🔔 Напоминание: {task_content}"
+                        print(f"  🤖 Executing task: {task_content} -> {recipient}")
+                        
+                        if recipient == "me":
+                            subprocess.run(["tg", "send", "me", msg])
+                            new_notified.add(task_hash)
+                        else:
+                            if send_message(recipient, msg):
+                                time.sleep(5)
+                                chk = read_chat_raw(recipient, 5)
+                                if any(cm.get('isOutgoing') and cm.get('text')==msg for cm in chk):
+                                    print("    ✅ Verified. Marking completed.")
+                                    tasks_to_complete.append(i)
+                                    # Don't add to notified if completed (so it doesn't stick)
+                                else:
+                                    print("    ❌ Verification failed")
+                                    new_notified.add(task_hash) # Retry later? Or mark notified?
             except: pass
+    
     state["notified_tasks"] = list(new_notified)
+    
+    if tasks_to_complete:
+        for idx in tasks_to_complete:
+            lines[idx] = lines[idx].replace("[active]", "[completed]")
+        with open(GRAPH_FILE, "w") as f: f.writelines(lines)
+        print(f"  📦 Completed {len(tasks_to_complete)} tasks")
 
 def extract_with_gemini(text, chat_name):
     manager = KeyManager()
