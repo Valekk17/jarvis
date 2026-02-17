@@ -193,7 +193,16 @@ const link = g.append("g")
         .data(data.nodes)
         .join("circle")
         .attr("r", d => d.radius)
-        .attr("fill", d => d.id === "Arisha" ? "#ff4444" : (d.id === "Family" ? "#ff4444" : color(d.group)))
+        .attr("fill", d => {{
+            // Systems
+            if (d.group === "system" || d.id === "JARVIS" || d.id === "cybos") return "#4444ff";
+            // Humans (Family, Friends, Owner)
+            if (d.group === "owner" || d.group === "actor" || d.id === "Family") return "#ff4444";
+            // Tasks/Promises
+            if (d.group === "plan") return "#44ffff";
+            if (d.group === "promise") return "#ffff44";
+            return color(d.group);
+        }})
         .call(drag(simulation));
 
 node.append("title").text(d => d.full || d.id);
