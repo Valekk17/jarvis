@@ -38,13 +38,12 @@ MOM_CHAT = "Мамуля"
 
 LOVE_KEYWORDS = ["люблю", "love", "обожаю", "скучаю"]
 LOVE_REPLIES = [
-    "Я тоже тебя очень сильно люблю! ❤️ Ты — мое счастье!",
-    "И я тебя люблю безумно! ❤️ Ты самая лучшая жена!",
-    "Обожаю тебя, родная! ❤️ Скучаю по тебе!",
-    "Люблю тебя больше всего на свете! ❤️ Ты делаешь меня счастливым!",
-    "Сильно-сильно люблю тебя! ❤️ Обнимаю крепко!",
-    "И я тебя люблю, солнышко! ❤️",
-    "Я тоже тебя люблю! ❤️ Ты мой мир."
+    "Я тебя люблю ❤️",
+    "Я тебя очень люблю ❤️",
+    "А я тебя люблю очень сильно ❤️",
+    "Знаешь что, я тебя очень люблю ❤️",
+    "И я тебя люблю ❤️",
+    "Я тебя люблю ❤️❤️❤️"
 ]
 
 MORNING_GREETINGS = [
@@ -124,9 +123,24 @@ def update_dashboard():
         if os.path.exists(GRAPH_FILE):
             with open(GRAPH_FILE) as f:
                 for line in f:
-                    if "**Pregnancy**" in line or "pregnancy_weeks" in line:
+                    if "**pregnancy_start_date**" in line:
+                        # Calc days
+                        try:
+                            val = line.split("**:")[1].split("|")[0].strip()
+                            start_date = datetime.strptime(val, "%Y-%m-%d").date()
+                            days = (date.today() - start_date).days
+                            weeks = days // 7
+                            days_rem = days % 7
+                            metrics.append(f"Беременность: {days} дн. ({weeks} нед. {days_rem} дн.)")
+                            
+                            # Calc due date (approx 40 weeks = 280 days)
+                            # due_date = start_date + timedelta(days=280)
+                            # days_left = 280 - days
+                            # metrics.append(f"До родов: ~{days_left} дн.")
+                        except: pass
+                    elif "**Pregnancy**" in line: # Fallback
                          metrics.append(line.split("|")[0].strip().replace("- ", ""))
-
+                         
         # Compose Text
         text = f"📊 **JARVIS Live Dashboard**\n━━━━━━━━━━━━━━━━━━\n\n📅 **Сегодня ({datetime.now().strftime('%d.%m')}):**\n"
         if tasks:
