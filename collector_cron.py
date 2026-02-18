@@ -23,7 +23,7 @@ GRAPH_FILE = os.path.join(JARVIS_DIR, "context_graph.md")
 TODAY = date.today().isoformat()
 DASHBOARD_CHAT_ID = "1700440705"
 DASHBOARD_MSG_ID = 1230
-API_TOKEN = "6b9b90cc1d18c70e6741594c6c07e15526fb740fb213b3c8"
+API_TOKEN = os.environ.get("OPENCLAW_API_TOKEN", "")
 
 # Personal chats to monitor
 CHATS = [

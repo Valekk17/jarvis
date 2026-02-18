@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-KEYS_FILE = "/root/.openclaw/workspace/keys.json"
+KEYS_FILE = "/root/.secrets/gemini_keys.json"
 STATE_FILE = "/root/.openclaw/workspace/key_manager_state.json"
 
 class KeyManager:
