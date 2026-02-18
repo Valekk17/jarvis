@@ -39,7 +39,4 @@ jarvis/
 
 ## Заметки для Claude / Notes for Claude
 
-- Половину текста пиши на русском, половину на английском / Write half in Russian, half in English
-- Владелец проекта только учит английский / The project owner is just learning English
-- Комментарии в коде можно писать на английском / Code comments can be in English
-- Объяснения лучше давать на двух языках / Explanations are better in both languages
+Давай половину на русском, половину на английском, я только учу английский. И ты мне отвечай также.
