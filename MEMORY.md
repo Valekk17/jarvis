@@ -1,40 +1,26 @@
 # Long-Term Memory
 
 ## System
-- JARVIS initialized: 2025-07-11
-- Graph schema: ONTOLOGY.md v1
-- Anti-noise filter: active
-- Model: Claude Opus 4.6 Thinking (primary)
-
-## Strategic Objectives
-1. Optimize User Life.
-2. Continuously Improve Architecture.
-3. Reduce Token Cost.
-4. Minimize Systemic Risk.
+- Initialized: 2025-07-11 | Model: Claude Opus 4.6 | Graph: ONTOLOGY.md v1
+- Google Cloud Code Assist (hokuxoqexu51@gmail.com): BANNED 2026-02-19 (403 ToS). Using direct Anthropic key.
+- 5 Gemini API keys in /root/.secrets/gemini_keys.json (separate from Cloud Code Assist)
 
 ## Key Facts
-- Owner is military serviceman in Serpukhov
-- Wife: Arisha (priority contact, chat "Мой Мир❤️")
-- Arisha pregnancy: ~12.3 weeks (as of 2026-02-14)
-- Baby expected before September 2026
-- Mother: Evgeniya Kovalkova
-- Brother: Andrey Kovalkov
-- Friend: Alexey Kosenko (Moscow)
+- Valek: military serviceman, Serpukhov
+- Arisha (wife): pregnant, ~14w3d as of 2026-02-18, due ~Aug 16, 2026
+- Family: Mother Evgeniya, Brother Andrey | Friend: Alexey Kosenko (Moscow)
+- Ring size: 16.5
 
 ## Key Decisions
-- Build context graph using markdown files + PostgreSQL
-- All internal files in English (saves ~30% tokens)
-- Adopted Google Gemini Embeddings (text-embedding-004)
-- Strictly enforce Russian + English Terminology in responses
+- Markdown-based context graph (PostgreSQL abandoned)
+- All internal files in English (~30% token savings)
+- Russian + English terminology in responses
+- No duplicate messages (message tool OR final, never both)
 
-## User Preferences
-- Name: Valek
-- Format: High-signal, structured messages
-- Visuals: Full-width headers, status icons
-- No duplicate messages (use message tool OR final, never both)
-
-## Lessons Learned
-- localtunnel URLs expire quickly — always verify before sharing
-- Python http.server dies silently — need process monitor
-- voice_watcher.py needs systemd service or nohup with monitoring
-- Always include sender attribution when feeding chat to LLM extractor
+## Lessons
+- localtunnel URLs expire — always verify
+- voice_watcher.py needs nohup/systemd monitoring
+- Include sender attribution when feeding chat to LLM
+- Bot API cannot send Telegram scheduled messages — use Cron
+- keys.json was publicly exposed via http.server — fixed 2026-02-18 (moved to /root/.secrets/)
+- System audit 2026-02-18: health 4/10 → 8/10. Archived 22 dead files, secured credentials.
