@@ -1,0 +1,36 @@
+# Secrets and API keys
+*.key
+*.pem
+*_key.json
+*keys.json
+gemini_keys.json
+.env
+.env.*
+*_env
+jarvis_env
+
+# Secrets directory (just in case)
+.secrets/
+secrets/
+
+# OpenClaw runtime
+*.log
+*.jsonl
+.openclaw/
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# State files (may contain sensitive data)
+*_state.json
+collector_state.json
+love_watcher_state.json
+morning_love_state.json
+key_manager_state.json
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
