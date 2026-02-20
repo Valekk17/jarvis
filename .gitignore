@@ -34,3 +34,7 @@ key_manager_state.json
 *.tmp
 *.temp
 .DS_Store
+.obsidian/
+__pycache__/
+file_56---*
+.ai/
